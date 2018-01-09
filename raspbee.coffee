@@ -8,11 +8,9 @@ module.exports = (env) ->
   WebSocket = require 'ws'
   events = require 'events'
 
-  #mia:3535/api/2D76AAA255/config
+   class RaspBeePlugin extends env.plugins.Plugin
 
-  class RaspBeePlugin extends env.plugins.Plugin
-
-    @apikey = "2D76AAA255"
+    @apikey = "KEY"
 
     init: (app, @framework, @config) =>
       deviceConfigDef = require("./device-config-schema.coffee")

@@ -1,0 +1,6 @@
+script#raspbeeremote-template(type='text/template')
+  li.sortable.button.no-header
+    label.device-label(data-bind="text: name, tooltip: $data.labelTooltipHtml")
+    span.attributes(data-bind="template: { name: 'attribute-template', foreach: $data.device.attributes, afterRender: $data.afterAttributeRender }")
+    div.buttons(data-bind="foreach: $data.device.remote")
+      a.ui-btn.ui-mini.ui-btn-inline.ui-corner-all(data-bind="jqmbutton: {text: $data.text}, click: $parent.onButtonPress")

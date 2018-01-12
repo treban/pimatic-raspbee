@@ -12,7 +12,8 @@ $(document).on 'templateinit', (event) ->
     getItemTemplate: => 'raspbeeremote'
 
     onButtonPress: (button) =>
-      @device.rest.buttonPressed({buttonId: button.id}, global: no)
+      console.log(button)
+      @device.rest.buttonPressed({buttonId: button}, global: no)
         .done(ajaxShowToast)
         .fail(ajaxAlertFail)
 

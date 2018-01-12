@@ -17,8 +17,14 @@ module.exports = {
       deviceID:
         description: "Raspbee device id"
         type: "string"
+        required: true
+      resetTime:
+        description: "Optional auto reset time in milli seconds"
+        type: "integer"
+        default: 0
+        required: false
   },
-  RaspBeeRemoteControl: {
+  RaspBeeRemoteControlNavigator: {
     title: "RaspBee MotionSensor"
     type: "object"
     properties:

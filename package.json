@@ -24,6 +24,20 @@
     "request-promise": "^2.0.1",
     "ws": "^1.1.1"
   },
+  "devDependencies": {
+    "blanket": "^1.2.3",
+    "bluebird": "^3.4.7",
+    "coffee-script": "^1.12.3",
+    "cassert": "^0.1.2",
+    "coffee-errors": "^0.8.6",
+    "decl-api": "0.0.22",
+    "grunt": "^1.0.1",
+    "grunt-cli": "^1.2.0",
+    "grunt-coffeelint": "0.0.16",
+    "grunt-mocha-test": "^0.13.2",
+    "mocha": "^3.2.0",
+    "sqlite3": "^3.1.8"
+  },
   "keywords": [
     "pimatic",
     "raspbee",

@@ -1,0 +1,147 @@
+
+li.sortable.raspbee-device label {
+  float: left;
+}
+
+ul.items .ui-slider-input{
+  display: none;
+}
+
+ul.items .raspbee-device div.item-inner .ui-slider-track {
+  margin-left: 22px;
+  margin-right: 8px;
+}
+
+ul.items .raspbee-device .ui-slider {
+  float: right;
+  margin: 1px 4px -1px 5px;
+  width: 12em;
+}
+
+ul.items .raspbee-device .ui-dimlevel {
+  float: right;
+  min-height: 30px;
+}
+
+ul.items .raspbee-device .ui-dimlevel .ui-slider-track {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
+}
+
+ul.items .raspbee-device .ui-dimlevel .ui-slider-track .ui-slider-bg {
+  background: none;
+}
+
+ul.items .raspbee-device .ui-color .ui-slider-track {
+  background: linear-gradient(to right, hsl(195, 100%, 85%), White, hsl(51, 100%, 85%));
+}
+ul.items .raspbee-device .ui-color .ui-slider-bg {
+  background: none;
+}
+
+ul.items .raspbee-device .ui-dimlevel .ui-slider-track .ui-slider-bg {
+  background: none;
+}
+
+ul.items .raspbee-device div.ui-spacer {
+  width: 123px;
+  height: 30px;
+  margin-left: 10px;
+  float: right;
+}
+
+
+ul.items .raspbee-device .ui-color {
+  float: right;
+  clear: right;
+  min-height: 30px;
+  margin-top: 8px;
+}
+
+ul.items .raspbee-device .ui-temp {
+  float: right;
+  clear: right;
+  min-height: 30px;
+  margin-top: 8px;
+}
+
+
+ul.items .raspbee-device .ui-temp .wbutton {
+  background-color: #efd275;
+}
+
+ul.items .raspbee-device .ui-temp .nbutton {
+  background-color: #f1e0b5;
+}
+
+ul.items .raspbee-device .ui-temp .cbutton {
+  background-color: #f5faf6;
+}
+
+ul.items .raspbee-device .presence {
+  float: right;
+  margin-top: 6px;
+}
+
+ul.items .raspbee-device div.ui-smallspacer {
+  width: 10px;
+  height: 5px;
+  float: right;
+}
+
+ul.items .raspbee-device div.ui-midspacer {
+  width: 30px;
+  height: 5px;
+  float: right;
+}
+
+ul.items .raspbee-device .ui-colorpicker div.sp-replacer {
+  height: 1.75em;
+  margin-left: auto;
+  margin-right: auto;
+  border: 0px;
+  background: none;
+  padding: 0px;
+  min-height: 30px;
+}
+
+ul.items .raspbee-device .ui-colorpicker div.sp-preview {
+  width: 123px;
+  height: 100%;
+  border-radius: 3em;
+  border-width: 0px;
+}
+
+ul.items .raspbee-device .ui-colorpicker div.ui-state-disabled {
+  box-shadow: 0px 0px 0px 2px silver;
+}
+
+ul.items .raspbee-device .ui-colorpicker div.sp-preview-inner {
+  border-radius: inherit;
+}
+
+ul.items .raspbee-device .ui-colorpicker div.sp-dd {
+  display: none;
+}
+
+/* Override Spectrum's value gradient to be invisible, as we ignore it anyway */
+div.sp-container div.sp-sat div.sp-val {
+  background-image: none;
+}
+
+div.sp-container {
+  border: 0px;
+  background-color: white;
+}
+
+ul.items .raspbee-device div.ui-colorpicker-spacer {
+  width: 30px;
+  height: 30px;
+  margin-left: 10px;
+  float: right;
+}
+
+@media only screen and (max-width:380px){
+    ul.items .raspbee-device .ui-slider {
+      width: 10em;
+    }
+}

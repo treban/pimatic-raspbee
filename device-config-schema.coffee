@@ -32,4 +32,52 @@ module.exports = {
         description: "Raspbee device id"
         type: "string"
   },
+  RaspBeeDimmer: {
+    title: "Raspbee Dimmer Light Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
+  },
+  RaspBeeCT: {
+    title: "Raspbee Color Temperature Light Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
+  },
+  RaspBeeRGB: {
+    title: "Raspbee Color Temperature Light Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
+  },
+  RaspBeeDimmerGroup: {
+    title: "Raspbee Dimmer Light Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
+  },
 }

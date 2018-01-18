@@ -20,7 +20,7 @@ module.exports = (env) ->
         if ( @websocketport != undefined )
           env.logger.debug("API key valid")
           @ws = new WebSocket('ws://mia:'+@websocketport, {
-                perMessageDeflate: false
+            perMessageDeflate: false
           })
           @ws.on('open', (data) =>
             env.logger.debug("Event Receiver connected.")

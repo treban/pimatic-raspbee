@@ -124,6 +124,9 @@ module.exports = (env) ->
         response = JSON.parse(res)
         return response[0].success.username
       ).catch ( (err) =>
-        env.logger.error(err)
         env.logger.error("apikey could not be generated")
+        if (err.statusCode is 403)
+          env.logger.error("unlock gateway!")
+        else
+          env.logger.error("Bad request")
       )

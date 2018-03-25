@@ -98,11 +98,11 @@ module.exports = (env) ->
           @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getGroup().then((devices)=>
-        env.logger.debug(devices)
+    #    env.logger.debug(devices)
         for i of devices
-          env.logger.debug(devices[i])
+    #      env.logger.debug(devices[i])
           dev=devices[i]
-          env.logger.debug(dev.type)
+    #      env.logger.debug(dev.type)
           @lclass = switch
             when dev.type == "LightGroup" then "RaspBeeDimmerGroup"
           config = {
@@ -117,7 +117,7 @@ module.exports = (env) ->
     connect: () =>
       @Connector = new RaspBeeConnection(@gatewayip,@gatewayport,@apikey)
       @Connector.on "event", (data) =>
-        env.logger.debug(data)
+      #  env.logger.debug(data)
         @emit "event", (data)
       @Connector.on "ready", =>
         @ready = true
@@ -132,9 +132,7 @@ module.exports = (env) ->
 # RaspBee MotionSensor
 ##############################################################
 
-  class RaspBeeMotionSensor extends env.devices.Sensor
-
-    template: "presence"
+  class RaspBeeMotionSensor extends env.devices.PresenceSensor
 
     constructor: (@config,lastState) ->
       @id = @config.id
@@ -151,10 +149,17 @@ module.exports = (env) ->
           if (data.state != undefined)
             @_setMotion(data.state.presence)
           if (data.config != undefined)
-            @_setBattery(data.config.battery)
-            @_setOnline(data.config.reachable)
+            if data.config.battery?
+              @_setBattery(data.config.battery)
+            if data.config.reachable?
+              @_setOnline(data.config.reachable)
 
+      @getInfos()
       myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
           @_setBattery(res.config.battery)
           @_setOnline(res.config.reachable)
@@ -189,17 +194,10 @@ module.exports = (env) ->
           @_setPresence(false)
         ), @config.resetTime)
 
-    _setPresence: (value) ->
-      if @_presence is value then return
-      @_presence = value
-      @emit 'presence', value
-
     _setOnline: (value) ->
       if @_online is value then return
       @_online = value
       @emit 'online', value
-
-    getPresence: -> Promise.resolve(@_presence)
 
     getOnline: -> Promise.resolve(@_online)
 
@@ -248,10 +246,17 @@ module.exports = (env) ->
               when 4001 then @buttonPressed("raspbee_#{@deviceID}_longleft")
               when 5001 then @buttonPressed("raspbee_#{@deviceID}_longright")
           if (data.config != undefined)
-            @_setBattery(data.config.battery)
-            @_setOnline(data.config.reachable)
+            if data.config.battery?
+              @_setBattery(data.config.battery)
+            if data.config.reachable?
+              @_setOnline(data.config.reachable)
 
+      @getInfos()
       myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
           @_setBattery(res.config.battery)
           @_setOnline(res.config.reachable)
@@ -321,6 +326,7 @@ module.exports = (env) ->
             @_setPresence(true)
             @parseEvent(data)
 
+      @getInfos()
       myRaspBeePlugin.on "ready", () =>
         @getInfos()
 
@@ -328,14 +334,14 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
           @_setPresence(res.state.reachable)
-          env.logger.debug(res)
+        #  env.logger.debug(res)
         )
 
     parseEvent: (data) ->
-      env.logger.debug("pa")
+      #env.logger.debug("pa")
       state: { bri: 137 }
       if (data.state.bri?)
-        env.logger.debug(data.state.bri)
+      #  env.logger.debug(data.state.bri)
         @_setDimlevel(parseInt(data.state.bri/254*100))
       if (data.state.on?)
         if (data.state.on)
@@ -386,7 +392,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to device #{@name}")
-          env.logger.debug (param)
+          #env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -595,7 +601,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getGroup(@deviceID).then( (res) =>
           #@_setPresence(res.state.reachable)
-          env.logger.debug(res)
+          #env.logger.debug(res)
         )
 
     parseEvent: (data) ->
@@ -647,7 +653,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setGroupState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to group #{@name}")
-          env.logger.debug (param)
+      #    env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else

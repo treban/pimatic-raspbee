@@ -27,7 +27,7 @@
   "devDependencies": {
     "blanket": "^1.2.3",
     "bluebird": "^3.4.7",
-    "coffee-script": "^1.12.3",
+    "coffeescript": "^1.12.3",
     "cassert": "^0.1.2",
     "coffee-errors": "^0.8.6",
     "decl-api": "0.0.22",

@@ -133,6 +133,10 @@ div.sp-container {
   background-color: white;
 }
 
+a .ui-btn .raspbee-device {
+  margin-left: 0px;
+}
+
 ul.items .raspbee-device div.ui-colorpicker-spacer {
   width: 30px;
   height: 30px;

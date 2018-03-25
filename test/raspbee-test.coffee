@@ -20,6 +20,8 @@ describe "pimatic", ->
     plugins: [
       {
         "plugin": "raspbee",
+        "ip" : "localhost",
+        "port" : "8080",
         "active": true,
         "debug": true
       }

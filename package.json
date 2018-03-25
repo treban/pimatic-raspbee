@@ -1,15 +1,12 @@
 {
   "name": "pimatic-raspbee",
   "description": "Pimatic plugin for raspbee zigbee network",
-  "author": {
-    "name": "Kosta",
-    "email": "trebankosta@gmail.com"
-  },
+  "author": "Kosta <trebankosta@gmail.com>",
   "main": "raspbee",
   "files": [
-    "app/raspbee.coffee",
-    "app/raspbee.jade",
-    "app/raspbee.css",
+    "app/raspbee-template.coffee",
+    "app/raspbee-template.jade",
+    "app/raspbee-template.css",
     "app/spectrum.css",
     "app/spectrum.js",
     "color.coffee",
@@ -58,12 +55,16 @@
     "url": "https://github.com/treban/pimatic-raspbee/issues"
   },
   "maintainers": [
-    {
-      "name": "treban",
-      "email": "trebankosta@gmail.com"
-    }
+    "treban <trebankosta@gmail.com>"
   ],
   "scripts": {
     "test": "grunt test"
-}
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/treban/pimatic-raspbee.git"
+  }
 }

@@ -7,10 +7,19 @@ pimatic-raspbee
 [![license](https://img.shields.io/github/license/treban/pimatic-raspbee.svg)](https://github.com/treban/pimatic-raspbee)
 
 
-This plugin provides ... for [pimatic](https://pimatic.org/).
+This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 
+!! This plugin is still in beta state !!
 
 #### Features
+* Discover devices, groups and sensors
+* Control lights
+* Control groups
+* Observe changes
+
+### Prerequisite
+
+The Raspbee device with the [deCONZ REST API](https://dresden-elektronik.github.io/deconz-rest-doc/) must be installed and configured.
 
 ### Installation
 
@@ -22,8 +31,17 @@ You can load the plugin by adding following in the config.json from your pimatic
 
     {
       "plugin": "raspbee",
-      "debug": true
+      "debug": true,
+      "active": true,
+      "ip": "<deconz ip>",
+      "port": "<deconz port>"
     }
+
+### Usages
+
+To create a connection to the raspbee gateway, the gateway must be unlocked.
+Then make a device discovery in pimatic.
+
 
 ### ChangeLog
 * 0.0.1 : First public version

@@ -12,10 +12,14 @@ This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 !! This plugin is still in beta state !!
 
 #### Features
+
 * Discover devices, groups and sensors
+* Support for motion sensors
+* Support for remote controls
 * Control lights
 * Control groups
 * Observe changes
+
 
 ### Prerequisite
 

@@ -56,6 +56,8 @@ module.exports = (env) ->
             @framework.pluginManager.updatePluginConfig 'raspbee', @cfg
             @connect()
             @scan()
+          ).catch( (error) =>
+            env.logger.error(error)
           )
         else
           @scan()

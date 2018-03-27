@@ -13,13 +13,13 @@ module.exports = (env) ->
       # Connect to WebSocket
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/config").then( (res) =>
         rconfig = JSON.parse(res)
-        env.logger.debug("Connection establised")
-        env.logger.debug("Name #{rconfig.name}")
-        env.logger.debug("API #{rconfig.apiversion}")
+        env.logger.info("Connection establised")
+        env.logger.info("Name #{rconfig.name}")
+        env.logger.info("API #{rconfig.apiversion}")
         @websocketport=rconfig.websocketport
         if ( @websocketport != undefined )
           env.logger.debug("API key valid")
-          @ws = new WebSocket('ws://mia:'+@websocketport, {
+          @ws = new WebSocket('ws://'+@host+':'+@websocketport, {
             perMessageDeflate: false
           })
           @ws.on('open', (data) =>
@@ -37,14 +37,15 @@ module.exports = (env) ->
             @emit 'event', (eventmessage)
           )
           @ws.on('error', (err) =>
-            env.logger.error(err)
+            env.logger.error("websocket error")
+            env.logger.debug(err)
             @emit 'error'
           )
         else
           env.logger.error("API key not valid")
       ).catch ( (err) =>
-        env.logger.error(err)
         env.logger.error("Connection could not be establised")
+        env.logger.debug(err)
         @emit 'error'
       )
 
@@ -126,7 +127,7 @@ module.exports = (env) ->
       ).catch ( (err) =>
         env.logger.error("apikey could not be generated")
         if (err.statusCode is 403)
-          env.logger.error("unlock gateway!")
+          return Promise.reject("unlock gateway!")
         else
-          env.logger.error("Bad request")
+          return Promise.reject("Bad request!")
       )

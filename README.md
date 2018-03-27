@@ -49,3 +49,4 @@ Then make a device discovery in pimatic.
 
 ### ChangeLog
 * 0.0.2 : First public version
+* 0.0.3 : BUGFIX #1

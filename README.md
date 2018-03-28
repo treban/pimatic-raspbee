@@ -46,7 +46,27 @@ You can load the plugin by adding following in the config.json from your pimatic
 To create a connection to the raspbee gateway, the gateway must be unlocked.
 Then make a device discovery in pimatic.
 
+* RaspBeeMotionSensor
+The motion sensor is like a normal presence sensor.
+You can configure an optional auto-reset time in milliseconds.
+
+* RaspBeeRemoteControlNavigator
+This device represents a 5 button remote control. THe device is lika a normal button device.
+There a predefined buttons which a useable in rules with this format: <raspbee_<deviceid>_button_
+possible keys are:
+power
+up
+down
+left
+right
+longpower
+longright
+longleft
+longup
+longdown
+
 
 ### ChangeLog
 * 0.0.2 : First public version
 * 0.0.3 : BUGFIX #1
+* 0.0.3 : BUGFIX

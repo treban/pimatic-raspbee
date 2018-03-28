@@ -336,18 +336,25 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
           @_setPresence(res.state.reachable)
-        #  env.logger.debug(res)
+          @_setDimlevel(res.state.bri)
+          @_setState(res.state.on)
         )
 
     parseEvent: (data) ->
-      #env.logger.debug("pa")
-      state: { bri: 137 }
       if (data.state.bri?)
-      #  env.logger.debug(data.state.bri)
-        @_setDimlevel(parseInt(data.state.bri/254*100))
+        if ((parseInt(data.state.bri/254*100) == 0) and (data.state.bri > 0) )
+          val=1
+        else
+          val=parseInt(data.state.bri/254*100)
+        if (@_state)
+          @_setDimlevel(val)
+        else
+          @_lastdimlevel = val
       if (data.state.on?)
         if (data.state.on)
+          @_setDimlevel(@_lastdimlevel)
         else
+          @_lastdimlevel = @_dimlevel
           @_setDimlevel(0)
 
     destroy: ->
@@ -438,11 +445,21 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
           @_setPresence(res.state.reachable)
-          @ctmin = res.ctmin
+          @_setDimlevel(res.state.bri)
+          @_setState(res.state.on)
+      #    @ctmin = res.ctmin
           @ctmax = res.ctmax
+          #env.logger.debug(res)
         ).catch( (err) =>
           env.logger.debug(err)
         )
+
+    parseEvent: (data) ->
+      super(data)
+      if (data.state.ct?)
+        ncol=(data.state.ct-@ctmin)/(@ctmax-@ctmin)
+        ncol=Math.min(Math.max(ncol, 0), 1)
+        @_setCt(Math.round(ncol*100))
 
     getTemplateName: -> "raspbee-ct"
 
@@ -602,14 +619,13 @@ module.exports = (env) ->
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getGroup(@deviceID).then( (res) =>
-          #@_setPresence(res.state.reachable)
-          #env.logger.debug(res)
+          @_setState(res.state.any_on)
         )
 
     parseEvent: (data) ->
-      if (( data.type == "group") and (data.id == "#{@deviceID}"))
-        #if (data.state != undefined)
-        env.logger.debug(data)
+      if (( data.type == "groups") and (data.id == "#{@deviceID}"))
+        if (data.state.any_on?)
+          @_setState(data.state.any_on)
 
     destroy: ->
       super()

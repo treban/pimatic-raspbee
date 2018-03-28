@@ -53,19 +53,18 @@ You can configure an optional auto-reset time in milliseconds.
 
 * RaspBeeRemoteControlNavigator
 
-This device represents a 5 button remote control. THe device is lika a normal button device.
-There a predefined buttons which a useable in rules with this format: <raspbee_<deviceid>_button_
-possible keys are:
-power
-up
-down
-left
-right
-longpower
-longright
-longleft
-longup
-longdown
+This device represents a 5 button remote control and is like a normal button device.
+There a predefined buttons which are useable in rules with this format: raspbee_deviceid_button
+possible button are:
+power / up /
+down /
+left /
+right /
+longpower /
+longright /
+longleft /
+longup /
+longdown 
 
 
 ### ChangeLog

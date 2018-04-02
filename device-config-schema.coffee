@@ -24,6 +24,24 @@ module.exports = {
         default: 0
         required: false
   },
+  RaspBeeContactSensor: {
+    title: "RaspBee ContactSensor"
+    type: "object"
+    extensions: ["xConfirm", "xLink", "xClosedLabel", "xOpenedLabel"]
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "string"
+        required: true
+      resetTime:
+        description: "Optional auto reset time in milli seconds"
+        type: "integer"
+        default: 0
+      inverted:
+        description: "Invert open/close state of contact device."
+        type: "boolean"
+        default: false
+  },
   RaspBeeRemoteControlNavigator: {
     title: "RaspBee MotionSensor"
     type: "object"

@@ -51,6 +51,18 @@ module.exports = {
         type: "integer"
         required: true
   },
+  RaspBeeSwitchSensor: {
+    title: "RaspBee SwitchSensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "integer"
+      resetTime:
+        description: "Auto reset time in milliseconds"
+        type: "integer"
+        default: 100
+  },
   RaspBeeRemoteControlNavigator: {
     title: "RaspBee MotionSensor"
     type: "object"

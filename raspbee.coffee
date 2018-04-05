@@ -26,6 +26,7 @@ module.exports = (env) ->
         RaspBeeMotionSensor,
         RaspBeeContactSensor,
         RaspBeeLightSensor,
+        RaspBeeSwitchSensor,
         RaspBeeRemoteControlNavigator,
         RaspBeeDimmer,
         RaspBeeCT,
@@ -74,7 +75,8 @@ module.exports = (env) ->
         for i of devices
           dev=devices[i]
           @lclass = switch
-            when dev.type == "ZHASwitch" then "RaspBeeRemoteControlNavigator"
+            when dev.type == "ZHASwitch" then "RaspBeeSwitchSensor"
+            when dev.modelid == "TRADFRI remote control" then "RaspBeeRemoteControlNavigator"
             when dev.type == "ZHAPresence" then "RaspBeeMotionSensor"
             when dev.type == "ZHAOpenClose" then "RaspBeeContactSensor"
             when dev.type == "ZHALightLevel" then "RaspBeeLightSensor"
@@ -368,7 +370,6 @@ module.exports = (env) ->
           @_updateAttributes res
 
     destroy: ->
-      clearTimeout(@_resetTimeout) if @_resetTimeout?
       super()
 
     attributes:
@@ -418,6 +419,98 @@ module.exports = (env) ->
     getBattery: -> Promise.resolve(@_battery)
 
     getLux: -> Promise.resolve(@_lux)
+
+
+##############################################################
+# RaspBee SwitchSensor
+##############################################################
+
+  class RaspBeeSwitchSensor extends env.devices.Device
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_state = lastState?.state?.value or "waiting"
+      @_online = lastState?.online?.value or false
+      @_battery = lastState?.battery?.value
+      @_resetTimeout = null
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.id is @deviceID
+          @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      if data.type is "sensors"
+        if data.state?.buttonevent?
+          @_setState(data.state.buttonevent)
+          @_resetTimeout = setTimeout(( =>
+            @_resetTimeout = null
+            @_setState("waiting")
+          ), @config.resetTime)
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
+          @_updateAttributes res
+
+    destroy: ->
+      clearTimeout(@_resetTimeout) if @_resetTimeout?
+      super()
+
+    attributes:
+      battery:
+        description: "Battery status"
+        type: t.number
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
+      online:
+        description: "online status"
+        type: t.boolean
+        labels: ['online', 'offline']
+      state:
+        description: "State of the sensor",
+        type: t.string
+
+
+    _setBattery: (value) ->
+      if @_battery is value then return
+      @_battery = value
+      @emit 'battery', value
+
+    _setState: (value) ->
+      if @_state is value then return
+      @_state = value
+      @emit 'state', value
+
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
+
+    getOnline: -> Promise.resolve(@_online)
+
+    getBattery: -> Promise.resolve(@_battery)
+
+    getState: -> Promise.resolve(@_state)
 
 ##############################################################
 # RaspBee Remote Control

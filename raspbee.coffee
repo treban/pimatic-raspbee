@@ -95,11 +95,7 @@ module.exports = (env) ->
             deviceID: i
           }
 
-          if not @lclass
-            env.logger.warn(" device type '"+dev.type+"' not supported")
-            env.logger.debug('Device not supported', dev)
-
-          if not @inConfig(i, @lclass) and @lclass
+          if @lclass and not @inConfig(i, @lclass)
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{dev.modelid}", config )
 
         @discoverMultiSensors()

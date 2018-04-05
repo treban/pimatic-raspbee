@@ -254,7 +254,8 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        @_updateAttributes data
+        if data.id is @deviceID
+          @_updateAttributes data
 
       @getInfos()
       myRaspBeePlugin.on "ready", () =>
@@ -264,7 +265,7 @@ module.exports = (env) ->
       if @config.inverted then not state else state
 
     _updateAttributes: (data) ->
-      if data.type is "sensors" and data.id is @deviceID
+      if data.type is "sensors"
         if data.state?
           @_changeContactTo(@_value(not data.state.open)) if data.state.open?
         if data.config?
@@ -345,14 +346,15 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        @_updateAttributes data
+        if data.id is @deviceID
+          @_updateAttributes data
 
       @getInfos()
       myRaspBeePlugin.on "ready", () =>
         @getInfos()
 
     _updateAttributes: (data) ->
-      if data.type is "sensors" and data.id is @deviceID
+      if data.type is "sensors"
         @_setLux(data.state.lux) if data.state?.lux?
         @_setBattery(data.config.battery) if data.config?.battery?
         @_setOnline(data.config.reachable) if data.config?.reachable?
@@ -443,7 +445,7 @@ module.exports = (env) ->
         { id : "raspbee_#{@deviceID}_longleft" , text : "Down" }
       ]
       myRaspBeePlugin.on "event", (data) =>
-        if (( data.type == "sensors") and (data.id == "#{@deviceID}"))
+        if data.type is "sensors" and data.id is @deviceID
           if (data.state != undefined)
             switch data.state.buttonevent
               when 1002 then @buttonPressed("raspbee_#{@deviceID}_power")
@@ -545,7 +547,7 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        if (( data.type == "lights") and (data.id == "#{@deviceID}"))
+        if data.type is "lights" and data.id is @deviceID
           if (data.state != undefined)
             @_setPresence(true)
             @parseEvent(data)
@@ -845,7 +847,7 @@ module.exports = (env) ->
         )
 
     parseEvent: (data) ->
-      if (( data.type == "groups") and (data.id == "#{@deviceID}"))
+      if data.type is "groups" and data.id is @deviceID
         if (data.state.any_on?)
           @_setState(data.state.any_on)
 

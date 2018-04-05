@@ -82,7 +82,10 @@ module.exports = (env) ->
             id: "raspbee_#{dev.etag}",
             deviceID: i
           }
-          @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{dev.modelid}", config )
+          newdevice = not @framework.deviceManager.devicesConfig.some (device_config) =>
+            device_config.deviceID is parseInt(i) and device_config.class is @lclass
+          if newdevice
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getLight().then((devices)=>
         for i of devices
@@ -99,7 +102,11 @@ module.exports = (env) ->
             id: "raspbee_#{dev.etag}",
             deviceID: i
           }
-          @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+          #if not @inConfig(i, @lclass)
+          newdevice = not @framework.deviceManager.devicesConfig.some (device_config) =>
+            device_config.deviceID is parseInt(i) and device_config.class is @lclass
+          if newdevice
+           @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getGroup().then((devices)=>
     #    env.logger.debug(devices)
@@ -115,7 +122,10 @@ module.exports = (env) ->
             id: "raspbee_#{dev.etag}",
             deviceID: i
           }
-          @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name} - #{dev.modelid}", config )
+          newdevice = not @framework.deviceManager.devicesConfig.some (device_config) =>
+            device_config.deviceID is parseInt(i) and device_config.class is @lclass
+          if newdevice
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name} - #{dev.modelid}", config )
       )
 
     connect: () =>

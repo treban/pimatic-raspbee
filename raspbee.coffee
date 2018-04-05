@@ -79,8 +79,8 @@ module.exports = (env) ->
         for i of devices
           dev=devices[i]
           @lclass = switch
-            when dev.type == "ZHASwitch" then "RaspBeeSwitchSensor"
             when dev.modelid == "TRADFRI remote control" then "RaspBeeRemoteControlNavigator"
+            when dev.type == "ZHASwitch" then "RaspBeeSwitchSensor"
             when dev.type == "ZHAPresence" then "RaspBeeMotionSensor"
             when dev.type == "ZHAOpenClose" then "RaspBeeContactSensor"
             when dev.type == "ZHALightLevel" then "RaspBeeLightSensor"

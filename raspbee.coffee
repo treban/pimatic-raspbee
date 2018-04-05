@@ -27,6 +27,9 @@ module.exports = (env) ->
         RaspBeeContactSensor,
         RaspBeeLightSensor,
         RaspBeeSwitchSensor,
+        RaspBeeTemperatureSensor,
+        RaspBeeHumiditySensor,
+        RaspBeePressureSensor,
         RaspBeeWaterSensor,
         RaspBeeRemoteControlNavigator,
         RaspBeeDimmer,
@@ -82,6 +85,9 @@ module.exports = (env) ->
             when dev.type == "ZHAOpenClose" then "RaspBeeContactSensor"
             when dev.type == "ZHALightLevel" then "RaspBeeLightSensor"
             when dev.type == "ZHAWater" then "RaspBeeWaterSensor"
+            when dev.type == "ZHATemperature" then "RaspBeeTemperatureSensor"
+            when dev.type == "ZHAHumidity" then "RaspBeeHumiditySensor"
+            when dev.type == "ZHAPressure" then "RaspBeePressureSensor"
           config = {
             class: @lclass,
             name: dev.name,
@@ -514,7 +520,267 @@ module.exports = (env) ->
 
     getState: -> Promise.resolve(@_state)
 
+
 ##############################################################
+# RaspBee TemperatureSensor
+##############################################################
+
+  class RaspBeeTemperatureSensor extends env.devices.Device
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_temperature = lastState?.temperature?.value
+      @_online = lastState?.online?.value or false
+      @_battery = lastState?.battery?.value
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.id is @deviceID
+          @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      if data.type is "sensors"
+        @_setTemperature(data.state.temperature / 100) if data.state?.temperature?
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
+          @_updateAttributes res
+
+    destroy: ->
+      super()
+
+    attributes:
+      battery:
+        description: "Battery status"
+        type: t.number
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
+      online:
+        description: "online status"
+        type: t.boolean
+        labels: ['online', 'offline']
+      temperature:
+        description: "The measured temperature",
+        type: t.number
+        unit: "°C"
+        acronym: "T"
+
+
+    _setBattery: (value) ->
+      if @_battery is value then return
+      @_battery = value
+      @emit 'battery', value
+
+    _setTemperature: (value) ->
+      if @_temperature is value then return
+      @_temperature = value
+      @emit 'temperature', value
+
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
+
+    getOnline: -> Promise.resolve(@_online)
+
+    getBattery: -> Promise.resolve(@_battery)
+
+    getTemperature: -> Promise.resolve(@_temperature)
+
+##############################################################
+# RaspBee HumiditySensor
+##############################################################
+
+  class RaspBeeHumiditySensor extends env.devices.Device
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_humidity = lastState?.humidity?.value
+      @_online = lastState?.online?.value or false
+      @_battery = lastState?.battery?.value
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.id is @deviceID
+          @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      if data.type is "sensors"
+        @_setHumidity(data.state.humidity / 100) if data.state?.humidity?
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
+          @_updateAttributes res
+
+    destroy: ->
+      super()
+
+    attributes:
+      battery:
+        description: "Battery status"
+        type: t.number
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
+      online:
+        description: "online status"
+        type: t.boolean
+        labels: ['online', 'offline']
+      humidity:
+        description: "The measured humidity",
+        type: t.number
+        unit: "%"
+        acronym: "H"
+
+
+    _setBattery: (value) ->
+      if @_battery is value then return
+      @_battery = value
+      @emit 'battery', value
+
+    _setHumidity: (value) ->
+      if @_humidity is value then return
+      @_humidity = value
+      @emit 'humidity', value
+
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
+
+    getOnline: -> Promise.resolve(@_online)
+
+    getBattery: -> Promise.resolve(@_battery)
+
+    getHumidity: -> Promise.resolve(@_humidity)
+
+
+##############################################################
+# RaspBee PressureSensor
+##############################################################
+
+  class RaspBeePressureSensor extends env.devices.Device
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_pressure = lastState?.humidity?.value
+      @_online = lastState?.online?.value or false
+      @_battery = lastState?.battery?.value
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.id is @deviceID
+          @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      if data.type is "sensors"
+        @_setPressure(data.state.pressure / 100) if data.state?.pressure?
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
+          @_updateAttributes res
+
+    destroy: ->
+      super()
+
+    attributes:
+      battery:
+        description: "Battery status"
+        type: t.number
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
+      online:
+        description: "online status"
+        type: t.boolean
+        labels: ['online', 'offline']
+      pressure:
+        description: "The measured pressure",
+        type: t.number
+        unit: "hPa"
+        acronym: "P"
+
+
+    _setBattery: (value) ->
+      if @_battery is value then return
+      @_battery = value
+      @emit 'battery', value
+
+    _setPressure: (value) ->
+      if @_pressure is value then return
+      @_pressure = value
+      @emit 'pressure', value
+
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
+
+    getOnline: -> Promise.resolve(@_online)
+
+    getBattery: -> Promise.resolve(@_battery)
+
+    getPressure: -> Promise.resolve(@_pressure)
+
+  ##############################################################
 # RaspBee WaterSensor
 ##############################################################
 

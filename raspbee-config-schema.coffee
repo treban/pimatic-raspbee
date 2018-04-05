@@ -8,13 +8,13 @@ module.exports = {
       type: "boolean"
       default: false
     ip:
-      description: "IP address from the deconz rest api "
+      description: "IP address from the deconz rest api"
       type: "string"
       required: true
     port:
-      description: "port from the deconz rest api "
+      description: "port from the deconz rest api"
       type: "string"
-      required: true
+      default: 80
     apikey:
       description: "api key"
       type: "string"

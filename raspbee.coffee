@@ -84,7 +84,12 @@ module.exports = (env) ->
             id: "raspbee_#{dev.etag}",
             deviceID: i
           }
-          if not @inConfig(i, @lclass)
+
+          if not @lclass
+            env.logger.warn(" device type '"+dev.type+"' not supported")
+            env.logger.debug('Device not supported', dev)
+
+          if not @inConfig(i, @lclass) and @lclass
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getLight().then((devices)=>
@@ -121,7 +126,7 @@ module.exports = (env) ->
             deviceID: i
           }
           if not @inConfig(i, @lclass)
-            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name} - #{dev.modelid}", config )
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name}", config )
       )
 
     connect: () =>
@@ -142,7 +147,7 @@ module.exports = (env) ->
       deviceID = parseInt(deviceID)
       for device in @framework.deviceManager.devicesConfig
         if parseInt(device.deviceID) is deviceID and device.class is className
-          env.logger.debug("device "+deviceID+" already exists")
+          env.logger.debug("device "+deviceID+" ("+className+") already exists")
           return true
       return false
 

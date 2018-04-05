@@ -163,9 +163,7 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        env.logger.debug(data)
         if data.type is "sensors" and data.id is @deviceID
-          env.logger.debug('motion',data)
           if (data.state != undefined)
             @_setMotion(data.state.presence)
           @_setBattery(data.config.battery) if data.config?.battery?
@@ -350,7 +348,6 @@ module.exports = (env) ->
 
     _updateAttributes: (data) ->
       if data.type is "sensors" and data.id is @deviceID
-        env.logger.debug('light',data)
         @_setLux(data.state.lux) if data.state?.lux?
         @_setBattery(data.config.battery) if data.config?.battery?
         @_setOnline(data.config.reachable) if data.config?.reachable?

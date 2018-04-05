@@ -168,21 +168,24 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        if data.type is "sensors" and data.id is @deviceID
-          if (data.state != undefined)
-            @_setMotion(data.state.presence)
-          @_setBattery(data.config.battery) if data.config?.battery?
-          @_setOnline(data.config.reachable) if data.config?.reachable?
+        if data.id is @deviceID
+          @_updateAttributes data
 
       @getInfos()
       myRaspBeePlugin.on "ready", () =>
         @getInfos()
 
+    _updateAttributes: (data) ->
+      if data.type is "sensors"
+        if (data.state != undefined)
+          @_setMotion(data.state.presence)
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
+
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
-          @_setBattery(res.config.battery)
-          @_setOnline(res.config.reachable)
+          @_updateAttributes res
         )
 
     destroy: ->

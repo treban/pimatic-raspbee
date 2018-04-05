@@ -42,6 +42,15 @@ module.exports = {
         type: "boolean"
         default: false
   },
+  RaspBeeLightSensor: {
+    title: "RaspBee LightSensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "string"
+        required: true
+  },
   RaspBeeRemoteControlNavigator: {
     title: "RaspBee MotionSensor"
     type: "object"

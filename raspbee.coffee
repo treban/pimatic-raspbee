@@ -25,6 +25,7 @@ module.exports = (env) ->
         #RaspBeeSystem,
         RaspBeeMotionSensor,
         RaspBeeContactSensor,
+        RaspBeeLightSensor,
         RaspBeeRemoteControlNavigator,
         RaspBeeDimmer,
         RaspBeeCT,
@@ -76,15 +77,14 @@ module.exports = (env) ->
             when dev.type == "ZHASwitch" then "RaspBeeRemoteControlNavigator"
             when dev.type == "ZHAPresence" then "RaspBeeMotionSensor"
             when dev.type == "ZHAOpenClose" then "RaspBeeContactSensor"
+            when dev.type == "ZHALightLevel" then "RaspBeeLightSensor"
           config = {
             class: @lclass,
             name: dev.name,
             id: "raspbee_#{dev.etag}",
             deviceID: i
           }
-          newdevice = not @framework.deviceManager.devicesConfig.some (device_config) =>
-            device_config.deviceID is parseInt(i) and device_config.class is @lclass
-          if newdevice
+          if not @inConfig(i, @lclass)
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getLight().then((devices)=>
@@ -103,9 +103,7 @@ module.exports = (env) ->
             deviceID: i
           }
           #if not @inConfig(i, @lclass)
-          newdevice = not @framework.deviceManager.devicesConfig.some (device_config) =>
-            device_config.deviceID is parseInt(i) and device_config.class is @lclass
-          if newdevice
+          if not @inConfig(i, @lclass)
            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getGroup().then((devices)=>
@@ -122,9 +120,7 @@ module.exports = (env) ->
             id: "raspbee_#{dev.etag}",
             deviceID: i
           }
-          newdevice = not @framework.deviceManager.devicesConfig.some (device_config) =>
-            device_config.deviceID is parseInt(i) and device_config.class is @lclass
-          if newdevice
+          if not @inConfig(i, @lclass)
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name} - #{dev.modelid}", config )
       )
 
@@ -142,6 +138,14 @@ module.exports = (env) ->
       #  env.logger.info("Plugin finish...")
       #)
 
+    inConfig: (deviceID, className) =>
+      deviceID = parseInt(deviceID)
+      for device in @framework.deviceManager.devicesConfig
+        if parseInt(device.deviceID) is deviceID and device.class is className
+          env.logger.debug("device "+deviceID+" already exists")
+          return true
+      return false
+
 ##############################################################
 # RaspBee MotionSensor
 ##############################################################
@@ -155,7 +159,7 @@ module.exports = (env) ->
       @resetTime = @config.resetTime
       @_presence = lastState?.presence?.value or false
       @_online = lastState?.online?.value or false
-      @_battery= lastState?.battery?.value or 0
+      @_battery = lastState?.battery?.value or 0
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
@@ -231,7 +235,7 @@ module.exports = (env) ->
     getBattery: -> Promise.resolve(@_battery)
 
 ##############################################################
-# RaspBee MotionSensor
+# RaspBee ContactSensor
 ##############################################################
 
   class RaspBeeContactSensor extends env.devices.ContactSensor
@@ -281,6 +285,19 @@ module.exports = (env) ->
       battery:
         description: "Battery status"
         type: t.number
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
       online:
         description: "online status"
         type: t.boolean
@@ -309,7 +326,93 @@ module.exports = (env) ->
 
     getBattery: -> Promise.resolve(@_battery)
 
-  ##############################################################
+##############################################################
+# RaspBee LightSensor
+##############################################################
+
+  class RaspBeeLightSensor extends env.devices.Device
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_lux = lastState?.lux?.value or 0
+      @_online = lastState?.online?.value or false
+      @_battery = lastState?.battery?.value or 0
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      @_setLux(data.state.lux) if data.config.lux?
+      if data.config?
+        @_setBattery(data.config.battery) if data.config.battery?
+        @_setOnline(data.config.reachable) if data.config.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
+          @_updateAttributes res
+
+    destroy: ->
+      clearTimeout(@_resetTimeout) if @_resetTimeout?
+      super()
+
+    attributes:
+      battery:
+        description: "Battery status"
+        type: t.number
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
+      online:
+        description: "online status"
+        type: t.boolean
+        labels: ['online', 'offline']
+      lux:
+        description: "Lux level",
+        type: t.number
+        unit: "lux"
+
+
+    _setBattery: (value) ->
+      if @_battery is value then return
+      @_battery = value
+      @emit 'battery', value
+
+    _setLux: (value) ->
+      console.log(value)
+      if @_lux is value then return
+      @_lux = value
+      @emit 'lux', value
+
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
+
+    getOnline: -> Promise.resolve(@_online)
+
+    getBattery: -> Promise.resolve(@_battery)
+
+    getLux: -> Promise.resolve(@_lux)
+
+##############################################################
 # RaspBee Remote Control
 ##############################################################
 

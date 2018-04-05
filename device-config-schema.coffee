@@ -63,6 +63,14 @@ module.exports = {
         type: "integer"
         default: 100
   },
+  RaspBeeWaterSensor: {
+    title: "RaspBee WaterSensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "integer"
+  },
   RaspBeeRemoteControlNavigator: {
     title: "RaspBee MotionSensor"
     type: "object"

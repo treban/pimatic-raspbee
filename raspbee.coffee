@@ -163,6 +163,7 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
+        env.logger.debug(data)
         if (( data.type == "sensors") and (data.id == "#{@deviceID}"))
           if (data.state != undefined)
             @_setMotion(data.state.presence)
@@ -262,11 +263,12 @@ module.exports = (env) ->
       if @config.inverted then not state else state
 
     _updateAttributes: (data) ->
-      if data.state?
-        @_changeContactTo(@_value(not data.state.open)) if data.state.open?
-      if data.config?
-        @_setBattery(data.config.battery) if data.config.battery?
-        @_setOnline(data.config.reachable) if data.config.reachable?
+      if data.type is "sensors"
+        if data.state?
+          @_changeContactTo(@_value(not data.state.open)) if data.state.open?
+        if data.config?
+          @_setBattery(data.config.battery) if data.config.battery?
+          @_setOnline(data.config.reachable) if data.config.reachable?
 
     getInfos: ->
       if (myRaspBeePlugin.ready)
@@ -349,10 +351,12 @@ module.exports = (env) ->
         @getInfos()
 
     _updateAttributes: (data) ->
-      @_setLux(data.state.lux) if data.state.lux?
-      if data.config?
-        @_setBattery(data.config.battery) if data.config.battery?
-        @_setOnline(data.config.reachable) if data.config.reachable?
+      if data.type is "sensors"
+        env.logger.debug(data)
+        @_setLux(data.state.lux) if data.state.lux?
+        if data.config?
+          @_setBattery(data.config.battery) if data.config.battery?
+          @_setOnline(data.config.reachable) if data.config.reachable?
 
     getInfos: ->
       if (myRaspBeePlugin.ready)

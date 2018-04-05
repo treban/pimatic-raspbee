@@ -213,13 +213,6 @@ module.exports = (env) ->
       @_online = lastState?.online?.value or false
       @_battery = lastState?.battery?.value
 
-      @addAttribute('online', {
-        description: "Online status",
-        type: "boolean"
-        labels: ['online', 'offline']
-      })
-      @['online'] = ()-> Promise.resolve(@_online)
-
       @addAttribute('battery', {
         description: "Battery",
         type: "number"
@@ -238,6 +231,13 @@ module.exports = (env) ->
           }
       })
       @['battery'] = ()-> Promise.resolve(@_battery)
+
+      @addAttribute('online', {
+        description: "Online status",
+        type: "boolean"
+        labels: ['online', 'offline']
+      })
+      @['online'] = ()-> Promise.resolve(@_online)
 
       # If lux is enabled, add it
       if @sensorIDs.length

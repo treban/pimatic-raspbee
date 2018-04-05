@@ -139,9 +139,9 @@ module.exports = (env) ->
       #)
 
     inConfig: (deviceID, className) =>
-      deviceID = parseInt(deviceID)
+      deviceID = deviceID.toString()
       for device in @framework.deviceManager.devicesConfig
-        if parseInt(device.deviceID) is deviceID and device.class is className
+        if device.deviceID.toString() is deviceID and device.class is className
           env.logger.debug("device "+deviceID+" already exists")
           return true
       return false
@@ -159,19 +159,16 @@ module.exports = (env) ->
       @resetTime = @config.resetTime
       @_presence = lastState?.presence?.value or false
       @_online = lastState?.online?.value or false
-      @_battery = lastState?.battery?.value or 0
+      @_battery = lastState?.battery?.value
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        env.logger.debug(data)
-        if (( data.type == "sensors") and (data.id == "#{@deviceID}"))
+        if data.type is "sensors" and data.id.toString() is @deviceID.toString()
+          env.logger.debug('motion',data)
           if (data.state != undefined)
             @_setMotion(data.state.presence)
-          if (data.config != undefined)
-            if data.config.battery?
-              @_setBattery(data.config.battery)
-            if data.config.reachable?
-              @_setOnline(data.config.reachable)
+          @_setBattery(data.config.battery) if data.config?.battery?
+          @_setOnline(data.config.reachable) if data.config?.reachable?
 
       @getInfos()
       myRaspBeePlugin.on "ready", () =>
@@ -248,7 +245,7 @@ module.exports = (env) ->
       @resetTime = @config.resetTime
       @_contact = lastState?.contact?.value or @_value(false)
       @_online = lastState?.online?.value or false
-      @_battery= lastState?.battery?.value or 0
+      @_battery= lastState?.battery?.value
       @_resetTimeout = null
       super(@config,lastState)
 
@@ -263,7 +260,7 @@ module.exports = (env) ->
       if @config.inverted then not state else state
 
     _updateAttributes: (data) ->
-      if data.type is "sensors"
+      if data.type is "sensors" and data.id.toString() is @deviceID.toString()
         if data.state?
           @_changeContactTo(@_value(not data.state.open)) if data.state.open?
         if data.config?
@@ -337,10 +334,10 @@ module.exports = (env) ->
     constructor: (@config,lastState) ->
       @id = @config.id
       @name = @config.name
-      @deviceID = @config.deviceID
+      @deviceID = @config.deviceID.toString()
       @_lux = lastState?.lux?.value or 0
       @_online = lastState?.online?.value or false
-      @_battery = lastState?.battery?.value or 0
+      @_battery = lastState?.battery?.value
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
@@ -351,12 +348,11 @@ module.exports = (env) ->
         @getInfos()
 
     _updateAttributes: (data) ->
-      if data.type is "sensors"
-        env.logger.debug(data)
-        @_setLux(data.state.lux) if data.state.lux?
-        if data.config?
-          @_setBattery(data.config.battery) if data.config.battery?
-          @_setOnline(data.config.reachable) if data.config.reachable?
+      if data.type is "sensors" and data.id.toString() is @deviceID.toString()
+        env.logger.debug('light',data)
+        @_setLux(data.state.lux) if data.state?.lux?
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
 
     getInfos: ->
       if (myRaspBeePlugin.ready)
@@ -400,7 +396,6 @@ module.exports = (env) ->
       @emit 'battery', value
 
     _setLux: (value) ->
-      console.log(value)
       if @_lux is value then return
       @_lux = value
       @emit 'lux', value
@@ -431,7 +426,7 @@ module.exports = (env) ->
       @deviceID = @config.deviceID
       @_presence = lastState?.presence?.value or false
       @_online = lastState?.online?.value or false
-      @_battery= lastState?.battery?.value or 0
+      @_battery= lastState?.battery?.value
       @config.buttons=[
         { id : "raspbee_#{@deviceID}_power" , text : "Power" },
         { id : "raspbee_#{@deviceID}_up" , text : "Up" },

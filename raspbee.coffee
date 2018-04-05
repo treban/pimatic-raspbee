@@ -20,6 +20,7 @@ module.exports = (env) ->
       @gatewayport = @config.port
       @cfg=@config
       @ready=false
+      @sensorCollection = {}
 
       deviceClasses = [
         #RaspBeeSystem,
@@ -27,15 +28,13 @@ module.exports = (env) ->
         RaspBeeContactSensor,
         RaspBeeLightSensor,
         RaspBeeSwitchSensor,
-        RaspBeeTemperatureSensor,
-        RaspBeeHumiditySensor,
-        RaspBeePressureSensor,
         RaspBeeWaterSensor,
         RaspBeeRemoteControlNavigator,
         RaspBeeDimmer,
         RaspBeeCT,
         RaspBeeRGB,
         RaspBeeDimmerGroup,
+        RaspBeeMultiSensor,
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -75,9 +74,12 @@ module.exports = (env) ->
         @connect()
 
     scan:() =>
+
       @Connector.getSensor().then((devices)=>
+        @sensorCollection = {}
         for i of devices
           dev=devices[i]
+          @addToCollection(i, dev)
           @lclass = switch
             when dev.modelid == "TRADFRI remote control" then "RaspBeeRemoteControlNavigator"
             when dev.type == "ZHASwitch" then "RaspBeeSwitchSensor"
@@ -85,9 +87,6 @@ module.exports = (env) ->
             when dev.type == "ZHAOpenClose" then "RaspBeeContactSensor"
             when dev.type == "ZHALightLevel" then "RaspBeeLightSensor"
             when dev.type == "ZHAWater" then "RaspBeeWaterSensor"
-            when dev.type == "ZHATemperature" then "RaspBeeTemperatureSensor"
-            when dev.type == "ZHAHumidity" then "RaspBeeHumiditySensor"
-            when dev.type == "ZHAPressure" then "RaspBeePressureSensor"
           config = {
             class: @lclass,
             name: dev.name,
@@ -101,6 +100,9 @@ module.exports = (env) ->
 
           if not @inConfig(i, @lclass) and @lclass
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{dev.modelid}", config )
+
+        @discoverMultiSensors()
+
       )
       @Connector.getLight().then((devices)=>
         for i of devices
@@ -138,6 +140,43 @@ module.exports = (env) ->
           if not @inConfig(i, @lclass)
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name}", config )
       )
+
+    addToCollection: (id, device) =>
+      if not @sensorCollection[device.etag]
+        @sensorCollection[device.etag] =
+          model: device.modelid
+          name: device.name
+          ids: []
+          supports: []
+      @sensorCollection[device.etag].ids.push(parseInt(id))
+      @sensorCollection[device.etag].supports.push(device.type)
+
+    discoverMultiSensors: () =>
+      for id, device of @sensorCollection
+        if device.ids.length > 1
+          console.log(device)
+          @lclass = switch
+            when device.model == "lumi.weather" then "RaspBeeMultiSensor"
+            when device.model == "lumi.sensor_ht" then "RaspBeeMultiSensor"
+
+          config = {
+            class: @lclass,
+            name: device.name,
+            id: "raspbee_#{id}",
+            deviceID: id,
+            sensorIDs: device.ids
+          }
+
+          if 'ZHAHumidity' in device.supports
+            config.supportsHumidity = true
+          if 'ZHAPressure' in device.supports
+            config.supportsPressure = true
+
+          newdevice = not @framework.deviceManager.devicesConfig.some (config_device, iterator) =>
+            config_device.deviceID is id
+
+          if newdevice
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{device.model}", config )
 
     connect: () =>
       @Connector = new RaspBeeConnection(@gatewayip,@gatewayport,@apikey)
@@ -779,6 +818,133 @@ module.exports = (env) ->
     getBattery: -> Promise.resolve(@_battery)
 
     getPressure: -> Promise.resolve(@_pressure)
+
+
+##############################################################
+# RaspBee MultiSensor
+##############################################################
+
+  class RaspBeeMultiSensor extends env.devices.Device
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @sensorIDs = @config.sensorIDs
+      @_temperature = lastState?.temperature?.value
+      if @config.supportsHumidity
+        @_humidity = lastState?.humidity?.value
+      if @config.supportsPressure
+        @_pressure = lastState?.pressure?.value
+      @_online = lastState?.online?.value or false
+      @_battery = lastState?.battery?.value
+
+      @attributes = {}
+
+      @attributes.battery = {
+        description: "Battery",
+        type: "number"
+        displaySparkline: false
+        unit: "%"
+        icon:
+          noText: true
+          mapping: {
+            'icon-battery-empty': 0
+            'icon-battery-fuel-1': [0, 20]
+            'icon-battery-fuel-2': [20, 40]
+            'icon-battery-fuel-3': [40, 60]
+            'icon-battery-fuel-4': [60, 80]
+            'icon-battery-fuel-5': [80, 100]
+            'icon-battery-filled': 100
+          }
+      }
+
+      @attributes.temperature = {
+        description: "the measured temperature"
+        type: "number"
+        unit: "°C"
+        acronym: 'T'
+      }
+
+      if @config.supportsHumidity
+        @attributes.humidity = {
+          description: "the measured humidity"
+          type: "number"
+          unit: '%'
+          acronym: 'H'
+        }
+
+      if @config.supportsPressure
+        @attributes.pressure = {
+          description: "the measured pressure"
+          type: "number"
+          unit: 'kPa'
+          acronym: 'P'
+        }
+
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.id in @sensorIDs
+          @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      @_setTemperature(data.state.temperature / 100) if data.state?.temperature?
+      if @config.supportsHumidity
+        @_setHumidity(data.state.humidity / 100) if data.state?.humidity?
+      if @config.supportsPressure
+        @_setPressure(data.state.pressure / 100) if data.state?.pressure?
+      @_setBattery(data.config.battery) if data.config?.battery?
+      @_setOnline(data.config.reachable) if data.config?.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        for id in @sensorIDs
+          myRaspBeePlugin.Connector.getSensor(id).then (res) =>
+            @_updateAttributes res
+
+    destroy: ->
+      super()
+
+    _setBattery: (value) ->
+      if @_battery is value then return
+      @_battery = value
+      @emit 'battery', value
+
+    _setTemperature: (value) ->
+      if @_temperature is value then return
+      @_temperature = value
+      @emit 'temperature', value
+
+    _setHumidity: (value) ->
+      if @_humidity is value then return
+      @_humidity = value
+      @emit 'humidity', value
+
+    _setPressure: (value) ->
+      if @_pressure is value then return
+      @_pressure = value
+      @emit 'pressure', value
+
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
+
+    getOnline: -> Promise.resolve(@_online)
+
+    getBattery: -> Promise.resolve(@_battery)
+
+    getTemperature: -> Promise.resolve(@_temperature)
+
+    getHumidity: -> Promise.resolve(@_humidity)
+
+    getPressure: -> Promise.resolve(@_pressure)
+
 
   ##############################################################
 # RaspBee WaterSensor

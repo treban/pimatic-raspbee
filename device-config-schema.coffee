@@ -63,30 +63,6 @@ module.exports = {
         type: "integer"
         default: 100
   },
-  RaspBeeTemperatureSensor: {
-    title: "RaspBee TemperatureSensor"
-    type: "object"
-    properties:
-      deviceID:
-        description: "Raspbee device id"
-        type: "integer"
-  },
-  RaspBeeHumiditySensor: {
-    title: "RaspBee HumiditySensor"
-    type: "object"
-    properties:
-      deviceID:
-        description: "Raspbee device id"
-        type: "integer"
-  },
-  RaspBeePressureSensor: {
-    title: "RaspBee PressureSensor"
-    type: "object"
-    properties:
-      deviceID:
-        description: "Raspbee device id"
-        type: "integer"
-  },
   RaspBeeWaterSensor: {
     title: "RaspBee WaterSensor"
     type: "object"
@@ -150,5 +126,26 @@ module.exports = {
         description: "Raspbee transtime"
         type: "integer"
         default: 5
+  },
+  RaspBeeMultiSensor: {
+    title: "Raspbee Multi sensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "string"
+      sensorIDs:
+        description: "All the ids of the sensors"
+        type: "array"
+        items:
+          type: "integer"
+      supportsHumidity:
+        description: "does this sensor measure humidity?"
+        type: "boolean"
+        default: false
+      supportsPressure:
+        description: "does this sensor measure pressure?"
+        type: "boolean"
+        default: false
   },
 }

@@ -16,13 +16,19 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "integer"
+        type: "string"
         required: true
       resetTime:
         description: "Optional auto reset time in milli seconds"
         type: "integer"
         default: 0
         required: false
+      sensorIDs:
+        description: "All the ids of the sensors"
+        type: "array"
+        default: []
+        items:
+          type: "integer"
   },
   RaspBeeContactSensor: {
     title: "RaspBee ContactSensor"

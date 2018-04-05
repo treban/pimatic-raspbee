@@ -81,6 +81,7 @@ module.exports = (env) ->
           dev=devices[i]
           @addToCollection(i, dev)
           @lclass = switch
+            when dev.modelid == 'lumi.sensor_motion.aq2' then ""
             when dev.modelid == "TRADFRI remote control" then "RaspBeeRemoteControlNavigator"
             when dev.type == "ZHASwitch" then "RaspBeeSwitchSensor"
             when dev.type == "ZHAPresence" then "RaspBeeMotionSensor"
@@ -154,10 +155,10 @@ module.exports = (env) ->
     discoverMultiSensors: () =>
       for id, device of @sensorCollection
         if device.ids.length > 1
-          console.log(device)
           @lclass = switch
             when device.model == "lumi.weather" then "RaspBeeMultiSensor"
             when device.model == "lumi.sensor_ht" then "RaspBeeMultiSensor"
+            when device.model == 'lumi.sensor_motion.aq2' then "RaspBeeMotionSensor"
 
           config = {
             class: @lclass,
@@ -210,44 +211,22 @@ module.exports = (env) ->
       @id = @config.id
       @name = @config.name
       @deviceID = @config.deviceID
+      @sensorIDs = @config.sensorIDs
       @resetTime = @config.resetTime
       @_presence = lastState?.presence?.value or false
       @_online = lastState?.online?.value or false
       @_battery = lastState?.battery?.value
-      super(@config,lastState)
 
-      myRaspBeePlugin.on "event", (data) =>
-        if data.id is @deviceID
-          @_updateAttributes data
+      @addAttribute('online', {
+        description: "Online status",
+        type: "boolean"
+        labels: ['online', 'offline']
+      })
+      @['online'] = ()-> Promise.resolve(@_online)
 
-      @getInfos()
-      myRaspBeePlugin.on "ready", () =>
-        @getInfos()
-
-    _updateAttributes: (data) ->
-      if data.type is "sensors"
-        @_setMotion(data.state.presence) if data.state?.presence?
-        @_setBattery(data.config.battery) if data.config?.battery?
-        @_setOnline(data.config.reachable) if data.config?.reachable?
-
-    getInfos: ->
-      if (myRaspBeePlugin.ready)
-        myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
-          @_updateAttributes res
-        )
-
-    destroy: ->
-      clearTimeout(@_resetTimeout) if @_resetTimeout?
-      super()
-
-    attributes:
-      presence:
-        description: "motion detection"
-        type: t.boolean
-        labels: ['present', 'absent']
-      battery:
-        description: "Battery status"
-        type: t.number
+      @addAttribute('battery', {
+        description: "Battery",
+        type: "number"
         displaySparkline: false
         unit: "%"
         icon:
@@ -261,15 +240,60 @@ module.exports = (env) ->
             'icon-battery-fuel-5': [80, 100]
             'icon-battery-filled': 100
           }
-      online:
-        description: "online status"
-        type: t.boolean
-        labels: ['online', 'offline']
+      })
+      @['battery'] = ()-> Promise.resolve(@_battery)
+
+      # If lux is enabled, add it
+      if @sensorIDs.length
+        @addAttribute('lux', {
+          description: "Lux",
+          type: "number"
+          unit: "lux"
+        })
+        @['lux'] = ()-> Promise.resolve(@_lux)
+
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.id is parseInt(@deviceID) or data.id in @sensorIDs
+          @_updateAttributes data
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    _updateAttributes: (data) ->
+      if data.type is "sensors" or @sensorIDs.length
+        @_setMotion(data.state.presence) if data.state?.presence?
+        @_setLux(data.state.lux) if data.state?.lux?
+        @_setBattery(data.config.battery) if data.config?.battery?
+        @_setOnline(data.config.reachable) if data.config?.reachable?
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        if @sensorIDs.length
+          for id in @sensorIDs
+            myRaspBeePlugin.Connector.getSensor(id).then( (res) =>
+              @_updateAttributes res
+            )
+        else
+          myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
+            @_updateAttributes res
+          )
+
+    destroy: ->
+      clearTimeout(@_resetTimeout) if @_resetTimeout?
+      super()
 
     _setBattery: (value) ->
       if @_battery is value then return
       @_battery = value
       @emit 'battery', value
+
+    _setLux: (value) ->
+      if @_lux is value then return
+      @_lux = value
+      @emit 'lux', value
 
     _setMotion: (value) ->
       clearTimeout(@_resetTimeout)
@@ -285,6 +309,8 @@ module.exports = (env) ->
       @emit 'online', value
 
     getOnline: -> Promise.resolve(@_online)
+
+    getLux: -> Promise.resolve @_lux
 
     getBattery: -> Promise.resolve(@_battery)
 
@@ -857,6 +883,12 @@ module.exports = (env) ->
             'icon-battery-fuel-5': [80, 100]
             'icon-battery-filled': 100
           }
+      }
+
+      @attributes.online = {
+        description: "Online status",
+        type: "boolean"
+        labels: ['online', 'offline']
       }
 
       @attributes.temperature = {

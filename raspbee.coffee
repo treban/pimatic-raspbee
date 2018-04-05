@@ -450,7 +450,7 @@ module.exports = (env) ->
     _updateAttributes: (data) ->
       if data.type is "sensors"
         if data.state?.buttonevent?
-          @_setState(data.state.buttonevent)
+          @_setState(data.state.buttonevent.toString())
           @_resetTimeout = setTimeout(( =>
             @_resetTimeout = null
             @_setState("waiting")

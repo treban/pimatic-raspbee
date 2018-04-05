@@ -109,7 +109,7 @@ module.exports = (env) ->
           }
           #if not @inConfig(i, @lclass)
           if not @inConfig(i, @lclass)
-           @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getGroup().then((devices)=>
     #    env.logger.debug(devices)

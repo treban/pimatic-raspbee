@@ -139,9 +139,9 @@ module.exports = (env) ->
       #)
 
     inConfig: (deviceID, className) =>
-      deviceID = deviceID.toString()
+      deviceID = parseInt(deviceID)
       for device in @framework.deviceManager.devicesConfig
-        if device.deviceID.toString() is deviceID and device.class is className
+        if parseInt(device.deviceID) is deviceID and device.class is className
           env.logger.debug("device "+deviceID+" already exists")
           return true
       return false
@@ -163,7 +163,8 @@ module.exports = (env) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
-        if data.type is "sensors" and data.id.toString() is @deviceID.toString()
+        env.logger.debug(data)
+        if data.type is "sensors" and data.id is @deviceID
           env.logger.debug('motion',data)
           if (data.state != undefined)
             @_setMotion(data.state.presence)
@@ -260,7 +261,7 @@ module.exports = (env) ->
       if @config.inverted then not state else state
 
     _updateAttributes: (data) ->
-      if data.type is "sensors" and data.id.toString() is @deviceID.toString()
+      if data.type is "sensors" and data.id is @deviceID
         if data.state?
           @_changeContactTo(@_value(not data.state.open)) if data.state.open?
         if data.config?
@@ -334,7 +335,7 @@ module.exports = (env) ->
     constructor: (@config,lastState) ->
       @id = @config.id
       @name = @config.name
-      @deviceID = @config.deviceID.toString()
+      @deviceID = @config.deviceID
       @_lux = lastState?.lux?.value or 0
       @_online = lastState?.online?.value or false
       @_battery = lastState?.battery?.value
@@ -348,7 +349,7 @@ module.exports = (env) ->
         @getInfos()
 
     _updateAttributes: (data) ->
-      if data.type is "sensors" and data.id.toString() is @deviceID.toString()
+      if data.type is "sensors" and data.id is @deviceID
         env.logger.debug('light',data)
         @_setLux(data.state.lux) if data.state?.lux?
         @_setBattery(data.config.battery) if data.config?.battery?

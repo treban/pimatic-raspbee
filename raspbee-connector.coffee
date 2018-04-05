@@ -30,7 +30,7 @@ module.exports = (env) ->
             jdata = JSON.parse(data)
             env.logger.debug(jdata)
             eventmessage =
-              id : jdata.id
+              id : parseInt(jdata.id)
               type : jdata.r
               state : jdata.state
               config : jdata.config

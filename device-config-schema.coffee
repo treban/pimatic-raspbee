@@ -16,7 +16,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
         required: true
       resetTime:
         description: "Optional auto reset time in milli seconds"
@@ -31,7 +31,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
         required: true
       resetTime:
         description: "Optional auto reset time in milli seconds"
@@ -48,7 +48,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
         required: true
   },
   RaspBeeRemoteControlNavigator: {
@@ -57,7 +57,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
   },
   RaspBeeDimmer: {
     title: "Raspbee Dimmer Light Device"

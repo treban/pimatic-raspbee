@@ -349,7 +349,7 @@ module.exports = (env) ->
         @getInfos()
 
     _updateAttributes: (data) ->
-      @_setLux(data.state.lux) if data.config.lux?
+      @_setLux(data.state.lux) if data.state.lux?
       if data.config?
         @_setBattery(data.config.battery) if data.config.battery?
         @_setOnline(data.config.reachable) if data.config.reachable?

@@ -13,6 +13,7 @@ module.exports = {
   RaspBeeMotionSensor: {
     title: "RaspBee MotionSensor"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       deviceID:
         description: "Raspbee device id"
@@ -136,6 +137,7 @@ module.exports = {
   RaspBeeMultiSensor: {
     title: "Raspbee Multi sensor"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       deviceID:
         description: "Raspbee address"

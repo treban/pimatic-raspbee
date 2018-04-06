@@ -911,7 +911,7 @@ module.exports = (env) ->
       @_dimlevel = lastState?.dimlevel?.value or 0
       @_lastdimlevel = lastState?.lastdimlevel?.value or 100
       @_state = lastState?.state?.value or off
-      @_transtime=@config.transtime or 5
+      @_transtime = @config.transtime
 
       @addAttribute  'presence',
         description: "online status",
@@ -933,25 +933,22 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
           @_setPresence(res.state.reachable)
-          @_setDimlevel(res.state.bri)
+          @_setDimlevel(parseInt(data.state.bri / 255 * 100))
           @_setState(res.state.on)
         )
 
     parseEvent: (data) ->
-      if (data.state.bri?)
-        if ((parseInt(data.state.bri/254*100) == 0) and (data.state.bri > 0) )
-          val=1
-        else
-          val=parseInt(data.state.bri/254*100)
-        if (@_state)
-          @_setDimlevel(val)
-        else
+      if data.state.bri?
+        val = parseInt(data.state.bri / 255 * 100)
+        @_setDimlevel(val)
+        if val > 0
           @_lastdimlevel = val
       if (data.state.on?)
-        if (data.state.on)
+        if data.state.on
           @_setDimlevel(@_lastdimlevel)
         else
-          @_lastdimlevel = @_dimlevel
+          if @_dimlevel > 0
+            @_lastdimlevel = @_dimlevel
           @_setDimlevel(0)
 
     destroy: ->
@@ -1016,7 +1013,7 @@ module.exports = (env) ->
 
 
 ##############################################################
-# TradfriDimmerTempSliderItem
+# RaspBeeDimmerTempSliderItem
 ##############################################################
 
   class RaspBeeCT extends RaspBeeDimmer
@@ -1136,6 +1133,13 @@ module.exports = (env) ->
       super(@config, lastState)
 
 
+    parseEvent: (data) ->
+      if data.state.hue?
+        @_setHue(data.state.hue / 65535 * 100)
+      if data.state.sat?
+        @_setSat(data.state.sat / 255 * 100)
+      @_
+
     getTemplateName: -> "raspbee-rgb"
 
     _setHue: (hueVal) ->
@@ -1157,29 +1161,6 @@ module.exports = (env) ->
     getHue: -> Promise.resolve(@_hue)
 
     getSat: -> Promise.resolve(@_sat)
-
-    # h=0-360,s=0-1,l=0-1
-    setHuesat: (h,s,l=0.75) ->
-      rgb=Color.hslToRgb(h,s,l)
-      xy=Color.rgb_to_xyY(rgb[0],rgb[1],rgb[2])
-      if (tradfriReady)
-        tradfriHub.setColorXY(@address, parseInt(xy[0]), parseInt(xy[1]), @_transtime
-        ).then( (res) =>
-          env.logger.debug ("New Color send to device")
-          return Promise.resolve()
-        )
-      else
-        return Promise.reject()
-
-    setColorHex: (hex) ->
-      if (tradfriReady)
-        tradfriHub.setColorHex(@address, hex, @_transtime
-        ).then( (res) =>
-          env.logger.debug ("New Color send to device")
-          return Promise.resolve()
-        )
-      else
-        return Promise.reject()
 
     setRGB: (r,g,b) ->
       xy=Color.rgb_to_xyY(r,g,b)
@@ -1282,7 +1263,6 @@ module.exports = (env) ->
       else
         env.logger.error ("gateway not online")
         return Promise.reject()
-
 
   myRaspBeePlugin = new RaspBeePlugin()
   return myRaspBeePlugin

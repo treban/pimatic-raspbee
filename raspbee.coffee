@@ -28,13 +28,13 @@ module.exports = (env) ->
         RaspBeeContactSensor,
         RaspBeeLightSensor,
         RaspBeeSwitchSensor,
+        RaspBeeMultiSensor,
         RaspBeeWaterSensor,
         RaspBeeRemoteControlNavigator,
         RaspBeeDimmer,
         RaspBeeCT,
         RaspBeeRGB,
         RaspBeeDimmerGroup,
-        RaspBeeMultiSensor,
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses

@@ -512,8 +512,8 @@ module.exports = (env) ->
       myRaspBeePlugin.on "ready", () =>
         @getInfos()
 
-    _updateAttributes: (data) ->
-      if data.state?.buttonevent?
+    _updateAttributes: (data, updateState = true) ->
+      if data.state?.buttonevent? and updateState
         @_setState(data.state.buttonevent.toString())
         @_resetTimeout = setTimeout(( =>
           @_resetTimeout = null
@@ -525,7 +525,7 @@ module.exports = (env) ->
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
-          @_updateAttributes res
+          @_updateAttributes res, false
 
     destroy: ->
       clearTimeout(@_resetTimeout) if @_resetTimeout?
@@ -1039,7 +1039,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
           @_setPresence(res.state.reachable)
-          @_setDimlevel(res.state.bri)
+          @_setDimlevel(res.state.bri / 255 * 100)
           @_setState(res.state.on)
       #    @ctmin = res.ctmin
           @ctmax = res.ctmax

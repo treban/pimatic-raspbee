@@ -1097,11 +1097,6 @@ module.exports = (env) ->
           description: "color Temperature",
           type: t.number
 
-      @cmin = 24933
-      @cmax = 33137
-      @min = 2000
-      @max = 4700
-
       @actions.setHuesat =
         description: 'set light color'
         params:
@@ -1138,7 +1133,6 @@ module.exports = (env) ->
         @_setHue(data.state.hue / 65535 * 100)
       if data.state.sat?
         @_setSat(data.state.sat / 255 * 100)
-      @_
 
     getTemplateName: -> "raspbee-rgb"
 

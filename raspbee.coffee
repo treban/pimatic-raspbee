@@ -1212,7 +1212,11 @@ module.exports = (env) ->
     getPresence: -> Promise.resolve(@_presence)
 
     turnOn: ->
-      @changeDimlevelTo(@_lastdimlevel)
+      param = {
+        on: true,
+        transitiontime: @_transtime
+      }
+      @_sendState(param)
 
     turnOff: ->
       @changeDimlevelTo(0)

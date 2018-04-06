@@ -933,7 +933,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
           @_setPresence(res.state.reachable)
-          @_setDimlevel(parseInt(data.state.bri / 255 * 100))
+          @_setDimlevel(parseInt(res.state.bri / 255 * 100))
           @_setState(res.state.on)
         )
 

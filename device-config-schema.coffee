@@ -13,6 +13,7 @@ module.exports = {
   RaspBeeMotionSensor: {
     title: "RaspBee MotionSensor"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       deviceID:
         description: "Raspbee device id"
@@ -23,6 +24,12 @@ module.exports = {
         type: "integer"
         default: 0
         required: false
+      sensorIDs:
+        description: "All the ids of the sensors"
+        type: "array"
+        default: []
+        items:
+          type: "integer"
   },
   RaspBeeContactSensor: {
     title: "RaspBee ContactSensor"
@@ -31,7 +38,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
         required: true
       resetTime:
         description: "Optional auto reset time in milli seconds"
@@ -42,13 +49,42 @@ module.exports = {
         type: "boolean"
         default: false
   },
+  RaspBeeLightSensor: {
+    title: "RaspBee LightSensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "integer"
+        required: true
+  },
+  RaspBeeSwitchSensor: {
+    title: "RaspBee SwitchSensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "integer"
+      resetTime:
+        description: "Auto reset time in milliseconds"
+        type: "integer"
+        default: 100
+  },
+  RaspBeeWaterSensor: {
+    title: "RaspBee WaterSensor"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee device id"
+        type: "integer"
+  },
   RaspBeeRemoteControlNavigator: {
     title: "RaspBee MotionSensor"
     type: "object"
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
   },
   RaspBeeDimmer: {
     title: "Raspbee Dimmer Light Device"
@@ -97,5 +133,27 @@ module.exports = {
         description: "Raspbee transtime"
         type: "integer"
         default: 5
+  },
+  RaspBeeMultiSensor: {
+    title: "Raspbee Multi sensor"
+    type: "object"
+    extensions: ["xAttributeOptions"]
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "string"
+      sensorIDs:
+        description: "All the ids of the sensors"
+        type: "array"
+        items:
+          type: "integer"
+      supportsHumidity:
+        description: "does this sensor measure humidity?"
+        type: "boolean"
+        default: false
+      supportsPressure:
+        description: "does this sensor measure pressure?"
+        type: "boolean"
+        default: false
   },
 }

@@ -970,7 +970,6 @@ module.exports = (env) ->
       @changeDimlevelTo(0)
 
     changeDimlevelTo: (level) ->
-      if @_dimlevel is level then return Promise.resolve true
       if level is 0
         state = false
         bright = 0
@@ -1129,6 +1128,18 @@ module.exports = (env) ->
 
 
     parseEvent: (data) ->
+      if data.state.bri?
+        val = parseInt(data.state.bri / 255 * 100)
+        @_setDimlevel(val)
+        if val > 0
+          @_lastdimlevel = val
+      if (data.state.on?)
+        if data.state.on
+          @_setDimlevel(@_lastdimlevel)
+        else
+          if @_dimlevel > 0
+            @_lastdimlevel = @_dimlevel
+          @_setDimlevel(0)
       if data.state.hue?
         @_setHue(data.state.hue / 65535 * 100)
       if data.state.sat?

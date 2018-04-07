@@ -1219,7 +1219,11 @@ module.exports = (env) ->
       @_sendState(param)
 
     turnOff: ->
-      @changeDimlevelTo(0)
+      param = {
+        on: false,
+        transitiontime: @_transtime
+      }
+      @_sendState(param)
 
     changeDimlevelTo: (level) ->
       if @_dimlevel is level then return Promise.resolve true

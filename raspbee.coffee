@@ -1219,14 +1219,9 @@ module.exports = (env) ->
       @_sendState(param)
 
     turnOff: ->
-      param = {
-        on: false,
-        transitiontime: @_transtime
-      }
-      @_sendState(param)
+      @changeDimlevelTo(0)
 
     changeDimlevelTo: (level) ->
-      if @_dimlevel is level then return Promise.resolve true
       if level is 0
         state = false
         bright = 0

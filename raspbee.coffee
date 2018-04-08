@@ -139,14 +139,19 @@ module.exports = (env) ->
       )
 
     addToCollection: (id, device) =>
-      if not @sensorCollection[device.etag]
-        @sensorCollection[device.etag] =
-          model: device.modelid
-          name: device.name
-          ids: []
-          supports: []
-      @sensorCollection[device.etag].ids.push(parseInt(id))
-      @sensorCollection[device.etag].supports.push(device.type)
+      if device.uniqueid?
+        uniqueid = device.uniqueid.split('-');
+        uniqueid = uniqueid[0].replace(/:/g,'')
+        console.log(uniqueid)
+        if not @sensorCollection[uniqueid]
+
+          @sensorCollection[uniqueid] =
+            model: device.modelid
+            name: device.name
+            ids: []
+            supports: []
+        @sensorCollection[uniqueid].ids.push(parseInt(id))
+        @sensorCollection[uniqueid].supports.push(device.type)
 
     discoverMultiSensors: () =>
       for id, device of @sensorCollection
@@ -173,7 +178,7 @@ module.exports = (env) ->
             config_device.deviceID is id
 
           if newdevice
-            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{device.model}", config )
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{device.model}", config )
 
     connect: () =>
       @Connector = new RaspBeeConnection(@gatewayip,@gatewayport,@apikey)

@@ -1191,19 +1191,6 @@ module.exports = (env) ->
 
   class RaspBeeDimmerGroup extends RaspBeeDimmer
 
-    _lastdimlevel: null
-
-    template: 'raspbee-dimmer'
-
-    constructor: (@config, lastState) ->
-      super(@config,lastState)
-
-      myRaspBeePlugin.on "event", (data) =>
-        @parseEvent(data)
-
-      myRaspBeePlugin.on "ready", () =>
-        @getInfos()
-
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getGroup(@deviceID).then( (res) =>
@@ -1214,49 +1201,6 @@ module.exports = (env) ->
       if data.type is "groups" and data.id is @deviceID
         if (data.state.any_on?)
           @_setState(data.state.any_on)
-
-    destroy: ->
-      super()
-
-    getTemplateName: -> "raspbee-dimmer"
-
-    _setPresence: (value) ->
-      if @_presence is value then return
-      @_presence = value
-      @emit 'presence', value
-
-    getPresence: -> Promise.resolve(@_presence)
-
-    turnOn: ->
-      param = {
-        on: true,
-        transitiontime: @_transtime
-      }
-      @_sendState(param)
-
-    turnOff: ->
-      @changeDimlevelTo(0)
-
-    changeDimlevelTo: (level) ->
-      if level is 0
-        state = false
-        bright = 0
-      else
-        state = true
-        bright=Math.round(level*(2.54))
-      param = {
-        on: state,
-        bri: bright,
-        transitiontime: @_transtime
-      }
-      @_sendState(param).then( () =>
-        unless @_dimlevel is 0
-          @_lastdimlevel = @_dimlevel
-        @_setDimlevel(level)
-        return Promise.resolve()
-      ).catch( (error) =>
-        return Promise.reject(error)
-      )
 
     _sendState: (param) ->
       if (myRaspBeePlugin.ready)

@@ -4,6 +4,8 @@ module.exports = (env) ->
   assert = env.require 'cassert'
   t = env.require('decl-api').types
   Color = require('./color')(env)
+  _ = env.require 'lodash'
+  M = env.matcher
 
   RaspBeeConnection = require('./raspbee-connector')(env)
 
@@ -34,7 +36,7 @@ module.exports = (env) ->
         RaspBeeDimmer,
         RaspBeeCT,
         RaspBeeRGB,
-        RaspBeeDimmerGroup,
+        RaspBeeDimmerGroup
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -43,6 +45,8 @@ module.exports = (env) ->
             configDef: deviceConfigDef[DeviceClass.name],
             createCallback: (deviceConfig,lastState) => new DeviceClass(deviceConfig, lastState, this)
           })
+
+      @framework.ruleManager.addActionProvider(new RaspBeeSceneActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -142,7 +146,6 @@ module.exports = (env) ->
       if device.uniqueid?
         uniqueid = device.uniqueid.split('-');
         uniqueid = uniqueid[0].replace(/:/g,'')
-        console.log(uniqueid)
         if not @sensorCollection[uniqueid]
 
           @sensorCollection[uniqueid] =
@@ -1191,6 +1194,16 @@ module.exports = (env) ->
 
   class RaspBeeDimmerGroup extends RaspBeeDimmer
 
+    constructor: (@config, lastState) ->
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        @parseEvent(data)
+
+      myRaspBeePlugin.on "ready", () =>
+        @getScenes()
+        @getInfos()
+
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getGroup(@deviceID).then( (res) =>
@@ -1199,14 +1212,78 @@ module.exports = (env) ->
 
     parseEvent: (data) ->
       if data.type is "groups" and data.id is @deviceID
+        @getScenes()
         if (data.state.any_on?)
           @_setState(data.state.any_on)
+
+    getScenes: ->
+      myRaspBeePlugin.Connector.getScenes(@config.deviceID).then( (res) =>
+        @config.scenes = []
+        for id, config of res
+          @config.scenes.push({
+            id: parseInt(id)
+            name: config.name
+          })
+      )
+
+    activateScene:  (scene_name)->
+      scene_id = null
+      for scene in @config.scenes
+        if scene.name is scene_name
+          scene_id = scene.id
+          if myRaspBeePlugin.ready
+            myRaspBeePlugin.Connector.setGroupScene(@deviceID, scene_id).then( (res) =>
+              if res[0].success?
+                @_setState(true)
+                return Promise.resolve()
+              else
+                return Promise.reject("Can't activate scene")
+            ).catch( (error) =>
+              return Promise.reject(error)
+            )
+            return Promise.resolve()
+          return Promise.reject("connector not ready")
+      return Promise.reject("Unknown scene "+scene_name)
+
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
+
+    getPresence: -> Promise.resolve(@_presence)
+
+    turnOn: ->
+      @changeDimlevelTo(@_lastdimlevel)
+
+    turnOff: ->
+      @changeDimlevelTo(0)
+
+    changeDimlevelTo: (level) ->
+      if level is 0
+        state = false
+        bright = 0
+      else
+        state = true
+        bright=Math.round(level*(2.54))
+      param = {
+        on: state,
+        bri: bright,
+        transitiontime: @_transtime
+      }
+      @_sendState(param).then( () =>
+        unless @_dimlevel is 0
+          @_lastdimlevel = @_dimlevel
+        @_setDimlevel(level)
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
 
     _sendState: (param) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setGroupState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to group #{@name}")
-      #    env.logger.debug (param)
+          #    env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -1220,6 +1297,78 @@ module.exports = (env) ->
       else
         env.logger.error ("gateway not online")
         return Promise.reject()
+
+  class RaspBeeSceneActionProvider extends env.actions.ActionProvider
+
+    constructor: (@framework) ->
+
+      # ### parseAction()
+      ###
+      Parses the above actions.
+      ###
+    parseAction: (input, context) =>
+      # The result the function will return:
+      matchCount = 0
+      matchingScene = null
+      scenes = []
+      @deviceScenes = {}
+      end = () => matchCount++
+      onSceneMatch = (m, {scene}) =>
+        matchingScene = scene
+
+      for id, d of @framework.deviceManager.devices
+        continue unless d instanceof RaspBeeDimmerGroup
+        for s in d.config.scenes
+          scenes.push [{device: d, scene: s.name}, s.name]
+          @deviceScenes[s.name] = d
+
+      m = M(input, context)
+        .match('activate group scene ')
+        .match(
+          scenes,
+          onSceneMatch
+        )
+
+      match = m.getFullMatch()
+      if match?
+        assert matchingScene?
+        assert typeof match is "string"
+        return {
+          token: match
+          nextInput: input.substring(match.length)
+          actionHandler: new SceneActionHandler(@deviceScenes[matchingScene], matchingScene)
+        }
+      else
+        return null
+
+  class SceneActionHandler extends env.actions.ActionHandler
+
+    constructor: (@device, @scene) ->
+      assert @device? and @device instanceof RaspBeeDimmerGroup
+      assert @scene? and typeof @scene is "string"
+
+    setup: ->
+      @dependOnDevice(@device)
+      super()
+
+    ###
+    Handles the above actions.
+    ###
+    _doExecuteAction: (simulate) =>
+      return (
+        if simulate
+          Promise.resolve __("would activate scene %s of device %s", @scene, @device.id)
+        else
+          @device.activateScene(@scene)
+            .then( =>__("activate scene %s of device %s", @scene, @device.id) )
+      )
+
+# ### executeAction()
+    executeAction: (simulate) => @_doExecuteAction(simulate)
+# ### hasRestoreAction()
+    hasRestoreAction: -> no
+
+
 
   myRaspBeePlugin = new RaspBeePlugin()
   return myRaspBeePlugin

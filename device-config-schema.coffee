@@ -133,6 +133,16 @@ module.exports = {
         description: "Raspbee transtime"
         type: "integer"
         default: 5
+      scenes:
+        description: "Scenes"
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            id:
+              type: "integer"
+            name:
+              type: "string"
   },
   RaspBeeMultiSensor: {
     title: "Raspbee Multi sensor"
@@ -156,4 +166,22 @@ module.exports = {
         type: "boolean"
         default: false
   },
+  RaspBeeGroupScenes: {
+    title: "RaspBeeScenes"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      buttons:
+        description: "Scene buttons"
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            id:
+              type: "integer"
+            text:
+              type: "string"
+  }
 }

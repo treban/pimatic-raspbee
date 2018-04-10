@@ -144,7 +144,7 @@ module.exports = (env) ->
 
     addToCollection: (id, device) =>
       if device.uniqueid?
-        uniqueid = device.uniqueid.split('-');
+        uniqueid = device.uniqueid.split('-')
         uniqueid = uniqueid[0].replace(/:/g,'')
         if not @sensorCollection[uniqueid]
 

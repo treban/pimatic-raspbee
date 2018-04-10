@@ -4,6 +4,8 @@ module.exports = (env) ->
   assert = env.require 'cassert'
   t = env.require('decl-api').types
   Color = require('./color')(env)
+  _ = env.require 'lodash'
+  M = env.matcher
 
   RaspBeeConnection = require('./raspbee-connector')(env)
 
@@ -28,13 +30,13 @@ module.exports = (env) ->
         RaspBeeContactSensor,
         RaspBeeLightSensor,
         RaspBeeSwitchSensor,
+        RaspBeeMultiSensor,
         RaspBeeWaterSensor,
         RaspBeeRemoteControlNavigator,
         RaspBeeDimmer,
         RaspBeeCT,
         RaspBeeRGB,
-        RaspBeeDimmerGroup,
-        RaspBeeMultiSensor,
+        RaspBeeDimmerGroup
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -43,6 +45,8 @@ module.exports = (env) ->
             configDef: deviceConfigDef[DeviceClass.name],
             createCallback: (deviceConfig,lastState) => new DeviceClass(deviceConfig, lastState, this)
           })
+
+      @framework.ruleManager.addActionProvider(new RaspBeeSceneActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -139,14 +143,17 @@ module.exports = (env) ->
       )
 
     addToCollection: (id, device) =>
-      if not @sensorCollection[device.etag]
-        @sensorCollection[device.etag] =
-          model: device.modelid
-          name: device.name
-          ids: []
-          supports: []
-      @sensorCollection[device.etag].ids.push(parseInt(id))
-      @sensorCollection[device.etag].supports.push(device.type)
+      if device.uniqueid?
+        uniqueid = device.uniqueid.split('-')
+        uniqueid = uniqueid[0].replace(/:/g,'')
+        if not @sensorCollection[uniqueid]
+          @sensorCollection[uniqueid] =
+            model: device.modelid
+            name: device.name
+            ids: []
+            supports: []
+        @sensorCollection[uniqueid].ids.push(parseInt(id))
+        @sensorCollection[uniqueid].supports.push(device.type)
 
     discoverMultiSensors: () =>
       for id, device of @sensorCollection
@@ -173,7 +180,7 @@ module.exports = (env) ->
             config_device.deviceID is id
 
           if newdevice
-            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{device.model}", config )
+            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Sensor: #{config.name} - #{device.model}", config )
 
     connect: () =>
       @Connector = new RaspBeeConnection(@gatewayip,@gatewayport,@apikey)
@@ -512,8 +519,8 @@ module.exports = (env) ->
       myRaspBeePlugin.on "ready", () =>
         @getInfos()
 
-    _updateAttributes: (data) ->
-      if data.state?.buttonevent?
+    _updateAttributes: (data, updateState = true) ->
+      if data.state?.buttonevent? and updateState
         @_setState(data.state.buttonevent.toString())
         @_resetTimeout = setTimeout(( =>
           @_resetTimeout = null
@@ -525,7 +532,7 @@ module.exports = (env) ->
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getSensor(@deviceID).then (res) =>
-          @_updateAttributes res
+          @_updateAttributes res, false
 
     destroy: ->
       clearTimeout(@_resetTimeout) if @_resetTimeout?
@@ -911,7 +918,7 @@ module.exports = (env) ->
       @_dimlevel = lastState?.dimlevel?.value or 0
       @_lastdimlevel = lastState?.lastdimlevel?.value or 100
       @_state = lastState?.state?.value or off
-      @_transtime=@config.transtime or 5
+      @_transtime = @config.transtime
 
       @addAttribute  'presence',
         description: "online status",
@@ -921,9 +928,7 @@ module.exports = (env) ->
 
       myRaspBeePlugin.on "event", (data) =>
         if data.type is "lights" and data.id is @deviceID
-          if (data.state != undefined)
-            @_setPresence(true)
-            @parseEvent(data)
+          @parseEvent(data)
 
       @getInfos()
       myRaspBeePlugin.on "ready", () =>
@@ -932,26 +937,22 @@ module.exports = (env) ->
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
-          @_setPresence(res.state.reachable)
-          @_setDimlevel(res.state.bri)
-          @_setState(res.state.on)
+          @parseEvent(res)
         )
 
     parseEvent: (data) ->
-      if (data.state.bri?)
-        if ((parseInt(data.state.bri/254*100) == 0) and (data.state.bri > 0) )
-          val=1
-        else
-          val=parseInt(data.state.bri/254*100)
-        if (@_state)
-          @_setDimlevel(val)
-        else
+      @_setPresence(true)
+      if data.state.bri?
+        val = parseInt(data.state.bri / 255 * 100)
+        @_setDimlevel(val)
+        if val > 0
           @_lastdimlevel = val
       if (data.state.on?)
-        if (data.state.on)
+        if data.state.on
           @_setDimlevel(@_lastdimlevel)
         else
-          @_lastdimlevel = @_dimlevel
+          if @_dimlevel > 0
+            @_lastdimlevel = @_dimlevel
           @_setDimlevel(0)
 
     destroy: ->
@@ -973,7 +974,6 @@ module.exports = (env) ->
       @changeDimlevelTo(0)
 
     changeDimlevelTo: (level) ->
-      if @_dimlevel is level then return Promise.resolve true
       if level is 0
         state = false
         bright = 0
@@ -1016,7 +1016,7 @@ module.exports = (env) ->
 
 
 ##############################################################
-# TradfriDimmerTempSliderItem
+# RaspBeeDimmerTempSliderItem
 ##############################################################
 
   class RaspBeeCT extends RaspBeeDimmer
@@ -1024,6 +1024,7 @@ module.exports = (env) ->
     template: 'raspbee-ct'
 
     constructor: (@config, @plugin, @framework, lastState) ->
+
       @ctmin = 153
       @ctmax = 500
       @_ct = @ctmin
@@ -1036,27 +1037,15 @@ module.exports = (env) ->
         params:
           colorCode:
             type: t.number
+
       super(@config, @plugin, @framework, lastState)
 
-    getInfos: ->
-      if (myRaspBeePlugin.ready)
-        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
-          @_setPresence(res.state.reachable)
-          @_setDimlevel(res.state.bri)
-          @_setState(res.state.on)
-      #    @ctmin = res.ctmin
-          @ctmax = res.ctmax
-          #env.logger.debug(res)
-        ).catch( (err) =>
-          env.logger.debug(err)
-        )
-
     parseEvent: (data) ->
-      super(data)
       if (data.state.ct?)
         ncol=(data.state.ct-@ctmin)/(@ctmax-@ctmin)
         ncol=Math.min(Math.max(ncol, 0), 1)
         @_setCt(Math.round(ncol*100))
+      super(data)
 
     getTemplateName: -> "raspbee-ct"
 
@@ -1100,11 +1089,6 @@ module.exports = (env) ->
           description: "color Temperature",
           type: t.number
 
-      @cmin = 24933
-      @cmax = 33137
-      @min = 2000
-      @max = 4700
-
       @actions.setHuesat =
         description: 'set light color'
         params:
@@ -1136,6 +1120,13 @@ module.exports = (env) ->
       super(@config, lastState)
 
 
+    parseEvent: (data) ->
+      if data.state.hue?
+        @_setHue(data.state.hue / 65535 * 100)
+      if data.state.sat?
+        @_setSat(data.state.sat / 255 * 100)
+      super(data)
+
     getTemplateName: -> "raspbee-rgb"
 
     _setHue: (hueVal) ->
@@ -1158,29 +1149,6 @@ module.exports = (env) ->
 
     getSat: -> Promise.resolve(@_sat)
 
-    # h=0-360,s=0-1,l=0-1
-    setHuesat: (h,s,l=0.75) ->
-      rgb=Color.hslToRgb(h,s,l)
-      xy=Color.rgb_to_xyY(rgb[0],rgb[1],rgb[2])
-      if (tradfriReady)
-        tradfriHub.setColorXY(@address, parseInt(xy[0]), parseInt(xy[1]), @_transtime
-        ).then( (res) =>
-          env.logger.debug ("New Color send to device")
-          return Promise.resolve()
-        )
-      else
-        return Promise.reject()
-
-    setColorHex: (hex) ->
-      if (tradfriReady)
-        tradfriHub.setColorHex(@address, hex, @_transtime
-        ).then( (res) =>
-          env.logger.debug ("New Color send to device")
-          return Promise.resolve()
-        )
-      else
-        return Promise.reject()
-
     setRGB: (r,g,b) ->
       xy=Color.rgb_to_xyY(r,g,b)
       param = {
@@ -1200,18 +1168,15 @@ module.exports = (env) ->
 
   class RaspBeeDimmerGroup extends RaspBeeDimmer
 
-    _lastdimlevel: null
-
-    template: 'raspbee-dimmer'
-
     constructor: (@config, lastState) ->
       super(@config,lastState)
 
       myRaspBeePlugin.on "event", (data) =>
         @parseEvent(data)
+        @getScenes()
 
       myRaspBeePlugin.on "ready", () =>
-        @getInfos()
+        @getScenes()
 
     getInfos: ->
       if (myRaspBeePlugin.ready)
@@ -1221,54 +1186,46 @@ module.exports = (env) ->
 
     parseEvent: (data) ->
       if data.type is "groups" and data.id is @deviceID
+        @_setPresence(true)
+        @getScenes()
         if (data.state.any_on?)
           @_setState(data.state.any_on)
 
-    destroy: ->
-      super()
 
-    getTemplateName: -> "raspbee-dimmer"
-
-    _setPresence: (value) ->
-      if @_presence is value then return
-      @_presence = value
-      @emit 'presence', value
-
-    getPresence: -> Promise.resolve(@_presence)
-
-    turnOn: ->
-      @changeDimlevelTo(@_lastdimlevel)
-
-    turnOff: ->
-      @changeDimlevelTo(0)
-
-    changeDimlevelTo: (level) ->
-      if @_dimlevel is level then return Promise.resolve true
-      if level is 0
-        state = false
-        bright = 0
-      else
-        state = true
-        bright=Math.round(level*(2.54))
-      param = {
-        on: state,
-        bri: bright,
-        transitiontime: @_transtime
-      }
-      @_sendState(param).then( () =>
-        unless @_dimlevel is 0
-          @_lastdimlevel = @_dimlevel
-        @_setDimlevel(level)
-        return Promise.resolve()
-      ).catch( (error) =>
-        return Promise.reject(error)
+    getScenes: ->
+      myRaspBeePlugin.Connector.getScenes(@config.deviceID).then( (res) =>
+        @config.scenes = []
+        for id, config of res
+          @config.scenes.push({
+            id: parseInt(id)
+            name: config.name
+          })
       )
+
+    activateScene:  (scene_name)->
+      scene_id = null
+      for scene in @config.scenes
+        if scene.name is scene_name
+          scene_id = scene.id
+          if myRaspBeePlugin.ready
+            myRaspBeePlugin.Connector.setGroupScene(@deviceID, scene_id).then( (res) =>
+              if res[0].success?
+                @_setState(true)
+                return Promise.resolve()
+              else
+                return Promise.reject("Can't activate scene")
+            ).catch( (error) =>
+              return Promise.reject(error)
+            )
+            return Promise.resolve()
+          return Promise.reject("connector not ready")
+      return Promise.reject("Unknown scene "+scene_name)
 
     _sendState: (param) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setGroupState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to group #{@name}")
-      #    env.logger.debug (param)
+          #    env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -1282,6 +1239,77 @@ module.exports = (env) ->
       else
         env.logger.error ("gateway not online")
         return Promise.reject()
+
+  class RaspBeeSceneActionProvider extends env.actions.ActionProvider
+
+    constructor: (@framework) ->
+
+      # ### parseAction()
+      ###
+      Parses the above actions.
+      ###
+    parseAction: (input, context) =>
+      # The result the function will return:
+      matchCount = 0
+      matchingScene = null
+      scenes = []
+      @deviceScenes = {}
+      end = () => matchCount++
+      onSceneMatch = (m, {scene}) =>
+        matchingScene = scene
+
+      for id, d of @framework.deviceManager.devices
+        continue unless d instanceof RaspBeeDimmerGroup
+        for s in d.config.scenes
+          scenes.push [{device: d, scene: s.name}, s.name]
+          @deviceScenes[s.name] = d
+
+      m = M(input, context)
+        .match('activate group scene ')
+        .match(
+          scenes,
+          onSceneMatch
+        )
+
+      match = m.getFullMatch()
+      if match?
+        assert matchingScene?
+        assert typeof match is "string"
+        return {
+          token: match
+          nextInput: input.substring(match.length)
+          actionHandler: new SceneActionHandler(@deviceScenes[matchingScene], matchingScene)
+        }
+      else
+        return null
+
+  class SceneActionHandler extends env.actions.ActionHandler
+
+    constructor: (@device, @scene) ->
+      assert @device? and @device instanceof RaspBeeDimmerGroup
+      assert @scene? and typeof @scene is "string"
+
+    setup: ->
+      @dependOnDevice(@device)
+      super()
+
+    ###
+    Handles the above actions.
+    ###
+    _doExecuteAction: (simulate) =>
+      return (
+        if simulate
+          Promise.resolve __("would activate scene %s of device %s", @scene, @device.id)
+        else
+          @device.activateScene(@scene)
+            .then( =>__("activate scene %s of device %s", @scene, @device.id) )
+      )
+
+# ### executeAction()
+    executeAction: (simulate) => @_doExecuteAction(simulate)
+# ### hasRestoreAction()
+    hasRestoreAction: -> no
+
 
 
   myRaspBeePlugin = new RaspBeePlugin()

@@ -85,6 +85,16 @@ module.exports = (env) ->
           return Promise.reject("Bad request")
       )
 
+    getScenes: (id) =>
+      Request("http://"+@host+":"+@port+"/api/"+@apikey+"/groups/"+id+"/scenes").then( (res) =>
+        return JSON.parse(res)
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Device not found")
+        else
+          return Promise.reject("Bad request")
+      )
+
     setLightState: (id,param) =>
       options = {
         uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/lights/'+id+'/state',
@@ -105,6 +115,20 @@ module.exports = (env) ->
         uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/groups/'+id+'/action',
         method: 'PUT',
         body: JSON.stringify(param)
+      }
+      Request(options).then( (res) =>
+        return JSON.parse(res)
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Device not found")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    setGroupScene: (id, scene_id) =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/groups/'+id+'/scenes/'+scene_id+'/recall',
+        method: 'PUT',
       }
       Request(options).then( (res) =>
         return JSON.parse(res)

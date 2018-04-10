@@ -78,7 +78,6 @@ module.exports = (env) ->
         @connect()
 
     scan:() =>
-
       @Connector.getSensor().then((devices)=>
         @sensorCollection = {}
         for i of devices
@@ -677,6 +676,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         for id in @sensorIDs
           myRaspBeePlugin.Connector.getSensor(id).then (res) =>
+          #  env.logger.debug res
             @_updateAttributes res
 
     destroy: ->
@@ -905,8 +905,8 @@ module.exports = (env) ->
   class RaspBeeDimmer extends env.devices.DimmerActuator
 
     _lastdimlevel: null
-
     template: 'raspbee-dimmer'
+
 
     constructor: (@config, lastState) ->
       @id = @config.id
@@ -937,14 +937,16 @@ module.exports = (env) ->
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
+          #env.logger.debug (res)
           @parseEvent(res)
         )
 
     parseEvent: (data) ->
       @_setPresence(true)
       if data.state.bri?
-        val = parseInt(data.state.bri / 255 * 100)
-        @_setDimlevel(val)
+        val = Math.ceil(data.state.bri / 255 * 100)
+        if @_state
+          @_setDimlevel(val)
         if val > 0
           @_lastdimlevel = val
       if (data.state.on?)
@@ -975,16 +977,16 @@ module.exports = (env) ->
 
     changeDimlevelTo: (level) ->
       if level is 0
-        state = false
-        bright = 0
+        param = {
+          on: false,
+          transitiontime: @_transtime
+        }
       else
-        state = true
-        bright=Math.round(level*(2.54))
-      param = {
-        on: state,
-        bri: bright,
-        transitiontime: @_transtime
-      }
+        param = {
+          on: true,
+          bri: Math.round(level*(2.54)),
+          transitiontime: @_transtime
+        }
       @_sendState(param).then( () =>
         unless @_dimlevel is 0
           @_lastdimlevel = @_dimlevel
@@ -1045,6 +1047,10 @@ module.exports = (env) ->
         ncol=(data.state.ct-@ctmin)/(@ctmax-@ctmin)
         ncol=Math.min(Math.max(ncol, 0), 1)
         @_setCt(Math.round(ncol*100))
+      if (data.ctmin?)
+        @ctmin=data.ctmin
+      if (data.ctmax?)
+        @ctmax=data.ctmax
       super(data)
 
     getTemplateName: -> "raspbee-ct"

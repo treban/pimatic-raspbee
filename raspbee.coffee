@@ -147,7 +147,6 @@ module.exports = (env) ->
         uniqueid = device.uniqueid.split('-')
         uniqueid = uniqueid[0].replace(/:/g,'')
         if not @sensorCollection[uniqueid]
-
           @sensorCollection[uniqueid] =
             model: device.modelid
             name: device.name
@@ -929,9 +928,7 @@ module.exports = (env) ->
 
       myRaspBeePlugin.on "event", (data) =>
         if data.type is "lights" and data.id is @deviceID
-          if (data.state != undefined)
-            @_setPresence(true)
-            @parseEvent(data)
+          @parseEvent(data)
 
       @getInfos()
       myRaspBeePlugin.on "ready", () =>
@@ -940,12 +937,11 @@ module.exports = (env) ->
     getInfos: ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
-          @_setPresence(res.state.reachable)
-          @_setDimlevel(parseInt(res.state.bri / 255 * 100))
-          @_setState(res.state.on)
+          @parseEvent(res)
         )
 
     parseEvent: (data) ->
+      @_setPresence(true)
       if data.state.bri?
         val = parseInt(data.state.bri / 255 * 100)
         @_setDimlevel(val)
@@ -1028,6 +1024,7 @@ module.exports = (env) ->
     template: 'raspbee-ct'
 
     constructor: (@config, @plugin, @framework, lastState) ->
+
       @ctmin = 153
       @ctmax = 500
       @_ct = @ctmin
@@ -1040,27 +1037,15 @@ module.exports = (env) ->
         params:
           colorCode:
             type: t.number
+
       super(@config, @plugin, @framework, lastState)
 
-    getInfos: ->
-      if (myRaspBeePlugin.ready)
-        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
-          @_setPresence(res.state.reachable)
-          @_setDimlevel(res.state.bri / 255 * 100)
-          @_setState(res.state.on)
-      #    @ctmin = res.ctmin
-          @ctmax = res.ctmax
-          #env.logger.debug(res)
-        ).catch( (err) =>
-          env.logger.debug(err)
-        )
-
     parseEvent: (data) ->
-      super(data)
       if (data.state.ct?)
         ncol=(data.state.ct-@ctmin)/(@ctmax-@ctmin)
         ncol=Math.min(Math.max(ncol, 0), 1)
         @_setCt(Math.round(ncol*100))
+      super(data)
 
     getTemplateName: -> "raspbee-ct"
 
@@ -1136,22 +1121,11 @@ module.exports = (env) ->
 
 
     parseEvent: (data) ->
-      if data.state.bri?
-        val = parseInt(data.state.bri / 255 * 100)
-        @_setDimlevel(val)
-        if val > 0
-          @_lastdimlevel = val
-      if (data.state.on?)
-        if data.state.on
-          @_setDimlevel(@_lastdimlevel)
-        else
-          if @_dimlevel > 0
-            @_lastdimlevel = @_dimlevel
-          @_setDimlevel(0)
       if data.state.hue?
         @_setHue(data.state.hue / 65535 * 100)
       if data.state.sat?
         @_setSat(data.state.sat / 255 * 100)
+      super(data)
 
     getTemplateName: -> "raspbee-rgb"
 
@@ -1199,10 +1173,10 @@ module.exports = (env) ->
 
       myRaspBeePlugin.on "event", (data) =>
         @parseEvent(data)
+        @getScenes()
 
       myRaspBeePlugin.on "ready", () =>
         @getScenes()
-        @getInfos()
 
     getInfos: ->
       if (myRaspBeePlugin.ready)
@@ -1212,9 +1186,11 @@ module.exports = (env) ->
 
     parseEvent: (data) ->
       if data.type is "groups" and data.id is @deviceID
+        @_setPresence(true)
         @getScenes()
         if (data.state.any_on?)
           @_setState(data.state.any_on)
+
 
     getScenes: ->
       myRaspBeePlugin.Connector.getScenes(@config.deviceID).then( (res) =>
@@ -1244,40 +1220,6 @@ module.exports = (env) ->
             return Promise.resolve()
           return Promise.reject("connector not ready")
       return Promise.reject("Unknown scene "+scene_name)
-
-    _setPresence: (value) ->
-      if @_presence is value then return
-      @_presence = value
-      @emit 'presence', value
-
-    getPresence: -> Promise.resolve(@_presence)
-
-    turnOn: ->
-      @changeDimlevelTo(@_lastdimlevel)
-
-    turnOff: ->
-      @changeDimlevelTo(0)
-
-    changeDimlevelTo: (level) ->
-      if level is 0
-        state = false
-        bright = 0
-      else
-        state = true
-        bright=Math.round(level*(2.54))
-      param = {
-        on: state,
-        bri: bright,
-        transitiontime: @_transtime
-      }
-      @_sendState(param).then( () =>
-        unless @_dimlevel is 0
-          @_lastdimlevel = @_dimlevel
-        @_setDimlevel(level)
-        return Promise.resolve()
-      ).catch( (error) =>
-        return Promise.reject(error)
-      )
 
     _sendState: (param) ->
       if (myRaspBeePlugin.ready)

@@ -46,7 +46,7 @@ module.exports = (env) ->
             createCallback: (deviceConfig,lastState) => new DeviceClass(deviceConfig, lastState, this)
           })
 
-      @framework.ruleManager.addActionProvider(new RaspBeeSceneActionProvider(@framework))
+#      @framework.ruleManager.addActionProvider(new RaspBeeSceneActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'

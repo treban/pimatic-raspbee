@@ -4,10 +4,9 @@ module.exports = (env) ->
   assert = env.require 'cassert'
   t = env.require('decl-api').types
   Color = require('./color')(env)
-  _ = env.require 'lodash'
-  M = env.matcher
 
   RaspBeeConnection = require('./raspbee-connector')(env)
+  RaspBeeAction = require('./action.coffee')(env)
 
   class RaspBeePlugin extends env.plugins.Plugin
 
@@ -36,7 +35,9 @@ module.exports = (env) ->
         RaspBeeDimmer,
         RaspBeeCT,
         RaspBeeRGB,
-        RaspBeeDimmerGroup
+        RaspBeeDimmerGroup,
+        RaspBeeGroupScenes
+
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -46,7 +47,9 @@ module.exports = (env) ->
             createCallback: (deviceConfig,lastState) => new DeviceClass(deviceConfig, lastState, this)
           })
 
-#      @framework.ruleManager.addActionProvider(new RaspBeeSceneActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeSceneActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeRGBActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeTempActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -124,10 +127,11 @@ module.exports = (env) ->
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getGroup().then((devices)=>
-    #    env.logger.debug(devices)
+        env.logger.debug(devices)
         for i of devices
     #      env.logger.debug(devices[i])
           dev=devices[i]
+          @groupid=i
     #      env.logger.debug(dev.type)
           @lclass = switch
             when dev.type == "LightGroup" then "RaspBeeDimmerGroup"
@@ -139,6 +143,32 @@ module.exports = (env) ->
           }
           if not @inConfig(i, @lclass)
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Group: #{config.name}", config )
+
+          do (config) =>
+            myRaspBeePlugin.Connector.getScenes(i).then( (res) =>
+              env.logger.debug res
+              env.logger.error config.deviceID
+              buttonsArray=[]
+              for id, cfg of res
+                buttonsArray.push({
+                  id: parseInt(id)
+                  name: cfg.name
+                  text: cfg.name
+                })
+              config = {
+                class: "RaspBeeGroupScenes"
+                name: "Scenes for #{config.name}"
+                id: "scene_#{config.id}_#{config.deviceID}"
+                deviceID: config.deviceID
+              }
+              env.logger.debug config
+              if buttonsArray.length > 0 and not @inConfig(config.deviceID, "RaspBeeGroupScenes")
+                config.buttons=buttonsArray
+                env.logger.debug config
+                @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "#{config.name}", config )
+            ).catch( (err) =>
+              env.logger.error(err)
+            )
       )
 
     addToCollection: (id, device) =>
@@ -634,15 +664,15 @@ module.exports = (env) ->
         description: "the measured temperature"
         type: "number"
         unit: "°C"
-        acronym: 'T'
+        acronym: @config.temperatureAcronym
       }
-
+      
       if @config.supportsHumidity
         @attributes.humidity = {
           description: "the measured humidity"
           type: "number"
           unit: '%'
-          acronym: 'H'
+          acronym: @config.humidityAcronym
         }
 
       if @config.supportsPressure
@@ -650,7 +680,7 @@ module.exports = (env) ->
           description: "the measured pressure"
           type: "number"
           unit: 'kPa'
-          acronym: 'P'
+          acronym: @config.pressureAcronym
         }
 
       super(@config,lastState)
@@ -1029,7 +1059,7 @@ module.exports = (env) ->
 
       @ctmin = 153
       @ctmax = 500
-      @_ct = @ctmin
+      @_ct = lastState?.ct?.value or @ctmin
       @addAttribute  'ct',
           description: "color Temperature",
           type: t.number
@@ -1179,10 +1209,6 @@ module.exports = (env) ->
 
       myRaspBeePlugin.on "event", (data) =>
         @parseEvent(data)
-        @getScenes()
-
-      myRaspBeePlugin.on "ready", () =>
-        @getScenes()
 
     getInfos: ->
       if (myRaspBeePlugin.ready)
@@ -1193,39 +1219,8 @@ module.exports = (env) ->
     parseEvent: (data) ->
       if data.type is "groups" and data.id is @deviceID
         @_setPresence(true)
-        @getScenes()
         if (data.state.any_on?)
           @_setState(data.state.any_on)
-
-
-    getScenes: ->
-      myRaspBeePlugin.Connector.getScenes(@config.deviceID).then( (res) =>
-        @config.scenes = []
-        for id, config of res
-          @config.scenes.push({
-            id: parseInt(id)
-            name: config.name
-          })
-      )
-
-    activateScene:  (scene_name)->
-      scene_id = null
-      for scene in @config.scenes
-        if scene.name is scene_name
-          scene_id = scene.id
-          if myRaspBeePlugin.ready
-            myRaspBeePlugin.Connector.setGroupScene(@deviceID, scene_id).then( (res) =>
-              if res[0].success?
-                @_setState(true)
-                return Promise.resolve()
-              else
-                return Promise.reject("Can't activate scene")
-            ).catch( (error) =>
-              return Promise.reject(error)
-            )
-            return Promise.resolve()
-          return Promise.reject("connector not ready")
-      return Promise.reject("Unknown scene "+scene_name)
 
     _sendState: (param) ->
       if (myRaspBeePlugin.ready)
@@ -1246,76 +1241,59 @@ module.exports = (env) ->
         env.logger.error ("gateway not online")
         return Promise.reject()
 
-  class RaspBeeSceneActionProvider extends env.actions.ActionProvider
 
-    constructor: (@framework) ->
+  class RaspBeeGroupScenes extends env.devices.Device
 
-      # ### parseAction()
-      ###
-      Parses the above actions.
-      ###
-    parseAction: (input, context) =>
-      # The result the function will return:
-      matchCount = 0
-      matchingScene = null
-      scenes = []
-      @deviceScenes = {}
-      end = () => matchCount++
-      onSceneMatch = (m, {scene}) =>
-        matchingScene = scene
+    template: "buttons"
 
-      for id, d of @framework.deviceManager.devices
-        continue unless d instanceof RaspBeeDimmerGroup
-        for s in d.config.scenes
-          scenes.push [{device: d, scene: s.name}, s.name]
-          @deviceScenes[s.name] = d
+    actions:
+      buttonPressed:
+        params:
+          buttonId:
+            type: t.integer
+        description: "Press a button"
 
-      m = M(input, context)
-        .match('activate group scene ')
-        .match(
-          scenes,
-          onSceneMatch
-        )
+    constructor: (@config, @plugin, @framework, lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @buttons = @config.buttons
+      super(@config)
+      myRaspBeePlugin.on "ready", (data) =>
+        @getScenes()
 
-      match = m.getFullMatch()
-      if match?
-        assert matchingScene?
-        assert typeof match is "string"
-        return {
-          token: match
-          nextInput: input.substring(match.length)
-          actionHandler: new SceneActionHandler(@deviceScenes[matchingScene], matchingScene)
-        }
-      else
-        return null
-
-  class SceneActionHandler extends env.actions.ActionHandler
-
-    constructor: (@device, @scene) ->
-      assert @device? and @device instanceof RaspBeeDimmerGroup
-      assert @scene? and typeof @scene is "string"
-
-    setup: ->
-      @dependOnDevice(@device)
+    destroy: () ->
       super()
 
-    ###
-    Handles the above actions.
-    ###
-    _doExecuteAction: (simulate) =>
-      return (
-        if simulate
-          Promise.resolve __("would activate scene %s of device %s", @scene, @device.id)
-        else
-          @device.activateScene(@scene)
-            .then( =>__("activate scene %s of device %s", @scene, @device.id) )
+    getScenes: ->
+      myRaspBeePlugin.Connector.getScenes(@config.deviceID).then( (res) =>
+        @config.buttons = []
+        for id, config of res
+          @config.buttons.push({
+            id: parseInt(id)
+            name: config.name
+            text: config.name
+          })
       )
 
-# ### executeAction()
-    executeAction: (simulate) => @_doExecuteAction(simulate)
-# ### hasRestoreAction()
-    hasRestoreAction: -> no
-
+    buttonPressed:  (scene_name)->
+      scene_id = null
+      for scene in @config.buttons
+        if scene.id is parseInt(scene_name) or scene.name is scene_name
+          env.logger.debug scene.name
+          scene_id = scene.id
+          if myRaspBeePlugin.ready
+            myRaspBeePlugin.Connector.setGroupScene(@deviceID, scene_id).then( (res) =>
+              if res[0].success?
+                return Promise.resolve()
+              else
+                return Promise.reject("Can't activate scene")
+            ).catch( (error) =>
+              return Promise.reject(error)
+            )
+            return Promise.resolve()
+          return Promise.reject("connector not ready")
+      return Promise.reject("Unknown scene "+scene_name)
 
 
   myRaspBeePlugin = new RaspBeePlugin()

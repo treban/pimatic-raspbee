@@ -56,7 +56,11 @@ There are three typs of light devices:
   - RGB
 
 * **RaspBeeDimmerGroup**
-The scenes are associated with the groups.
+
+* **RaspBeeGroupScenes**
+The scenes are associated with the groups
+and are represented by a button device.
+Afer each restart of pimatic all scenes are updated.
 
 * **RaspBeeMotionSensor**
 
@@ -90,6 +94,16 @@ longleft /
 longup /
 longdown
 
+### ActionProvider
+
+* **"activate group scene <name>"**  
+
+* **"set color temp <name> to <value>"**  
+
+* **"set color rgb <name> to <hexvalue>"**
+
+Example:
+set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
 
 ### ChangeLog
 * 0.0.2 : First public version
@@ -98,7 +112,10 @@ longdown
 * 0.0.5 : New features and BUGFIX
   * MultiSensor devices
   * Scenes
-
+* 0.0.6 : HOTFIX
+* 0.0.7 : New features and BUGFIX
+  * Actionprovider for scenes and light color / rgb
+  * Scenes are now a standalone device as a button device
   ----------------------------
 ### Contributors
 

@@ -50,7 +50,7 @@ Then make a device discovery in pimatic.
 ### Supported devices
 
 * **RaspBeeLightDevices**
-There are tree typs of light devices:
+There are three typs of light devices:
   - Dimmer only
   - Color temperature
   - RGB

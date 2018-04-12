@@ -147,7 +147,6 @@ module.exports = (env) ->
           do (config) =>
             myRaspBeePlugin.Connector.getScenes(i).then( (res) =>
               env.logger.debug res
-              env.logger.error config.deviceID
               buttonsArray=[]
               for id, cfg of res
                 buttonsArray.push({

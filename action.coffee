@@ -138,6 +138,7 @@ module.exports = (env) ->
       RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
         (device) => _.includes [
           'RaspBeeCT',
+          'RaspBeeRGB',
         ], device.config.class
       ).value()
 

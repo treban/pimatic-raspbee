@@ -133,16 +133,6 @@ module.exports = {
         description: "Raspbee transtime"
         type: "integer"
         default: 5
-      scenes:
-        description: "Scenes"
-        type: "array"
-        items:
-          type: "object"
-          properties:
-            id:
-              type: "integer"
-            name:
-              type: "string"
   },
   RaspBeeMultiSensor: {
     title: "Raspbee Multi sensor"
@@ -165,6 +155,18 @@ module.exports = {
         description: "does this sensor measure pressure?"
         type: "boolean"
         default: false
+      temperatureAcronym:
+        description: "temperature acronym"
+        type: "string"
+        default: "T"
+      humidityAcronym:
+        description: "humidity acronym"
+        type: "string"
+        default: "H"
+      pressureAcronym:
+        description: "pressure acronym"
+        type: "string"
+        default: "P"
   },
   RaspBeeGroupScenes: {
     title: "RaspBeeScenes"
@@ -182,6 +184,8 @@ module.exports = {
             id:
               type: "integer"
             text:
+              type: "string"
+            name:
               type: "string"
   }
 }

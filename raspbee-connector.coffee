@@ -125,6 +125,21 @@ module.exports = (env) ->
           return Promise.reject("Bad request")
       )
 
+    setSensorConfig: (id,param) =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/sensors/'+id+'/config',
+        method: 'PUT',
+        body: JSON.stringify(param)
+      }
+      Request(options).then( (res) =>
+        return JSON.parse(res)
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Device not found")
+        else
+          return Promise.reject("Bad request")
+      )
+
     setGroupScene: (id, scene_id) =>
       options = {
         uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/groups/'+id+'/scenes/'+scene_id+'/recall',

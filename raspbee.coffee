@@ -305,15 +305,18 @@ module.exports = (env) ->
         if @sensorIDs.length
           for id in @sensorIDs
             myRaspBeePlugin.Connector.getSensor(id).then( (res) =>
+              if res.config?.duration?
+                @_setDuration(id)
               @_updateAttributes res
             )
         else
           myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
+            if res.config?.duration?
+              @_setDuration(@deviceID)
             @_updateAttributes res
           )
 
     destroy: ->
-      clearTimeout(@_resetTimeout) if @_resetTimeout?
       super()
 
     _setBattery: (value) ->
@@ -327,18 +330,23 @@ module.exports = (env) ->
       @emit 'lux', value
 
     _setMotion: (value) ->
-      clearTimeout(@_resetTimeout)
       @_setPresence(value)
-      if (@config.resetTime > 0) and (value = true)
-        @_resetTimeout = setTimeout(( =>
-          @_setPresence(false)
-        ), @config.resetTime)
 
     _setOnline: (value) ->
       if @_online is value then return
       @_online = value
       @emit 'online', value
 
+    _setDuration: (id) ->
+      duration = @config.resetTime
+      if duration < 60
+        duration = 60
+      config = {
+        duration: duration
+      }
+      myRaspBeePlugin.Connector.setSensorConfig(id, config).then( (res) =>
+
+      )
     getOnline: -> Promise.resolve(@_online)
 
     getLux: -> Promise.resolve @_lux

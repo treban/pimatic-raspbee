@@ -1,7 +1,7 @@
 module.exports = {
   title: "raspbee"
   RaspBeeSystem: {
-    title: "Controle Center Device properties"
+    title: "Control Center Device properties"
     type: "object"
     extensions: ["xLink"]
     properties:
@@ -20,9 +20,9 @@ module.exports = {
         type: "string"
         required: true
       resetTime:
-        description: "Optional auto reset time in milli seconds"
+        description: "Reset time in seconds"
         type: "integer"
-        default: 0
+        default: 60
         required: false
       sensorIDs:
         description: "All the ids of the sensors"

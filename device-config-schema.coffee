@@ -34,7 +34,7 @@ module.exports = {
   RaspBeeContactSensor: {
     title: "RaspBee ContactSensor"
     type: "object"
-    extensions: ["xConfirm", "xLink", "xClosedLabel", "xOpenedLabel"]
+    extensions: ["xConfirm", "xLink", "xClosedLabel", "xOpenedLabel", "xAttributeOptions"]
     properties:
       deviceID:
         description: "Raspbee device id"

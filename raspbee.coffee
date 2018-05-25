@@ -1013,17 +1013,11 @@ module.exports = (env) ->
       @changeDimlevelTo(0)
 
     changeDimlevelTo: (level) ->
-      if level is 0
-        param = {
-          on: false,
-          transitiontime: @_transtime
-        }
-      else
-        param = {
-          on: true,
-          bri: Math.round(level*(2.54)),
-          transitiontime: @_transtime
-        }
+      param = {
+        on: level != 0,
+        bri: Math.round(level*(2.54)),
+        transitiontime: @_transtime
+      }
       @_sendState(param).then( () =>
         unless @_dimlevel is 0
           @_lastdimlevel = @_dimlevel

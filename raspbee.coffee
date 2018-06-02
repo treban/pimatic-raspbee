@@ -1094,7 +1094,6 @@ module.exports = (env) ->
       @emit "ct", color
 
     setCT: (color) =>
-      if @_ct is color then return Promise.resolve true
       param = {
         ct: Math.round(@ctmin + color / 100 * (@ctmax-@ctmin)),
         transitiontime: @_transtime

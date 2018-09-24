@@ -1013,17 +1013,11 @@ module.exports = (env) ->
       @changeDimlevelTo(0)
 
     changeDimlevelTo: (level) ->
-      if level is 0
-        param = {
-          on: false,
-          transitiontime: @_transtime
-        }
-      else
-        param = {
-          on: true,
-          bri: Math.round(level*(2.54)),
-          transitiontime: @_transtime
-        }
+      param = {
+        on: level != 0,
+        bri: Math.round(level*(2.54)),
+        transitiontime: @_transtime
+      }
       @_sendState(param).then( () =>
         unless @_dimlevel is 0
           @_lastdimlevel = @_dimlevel
@@ -1100,7 +1094,6 @@ module.exports = (env) ->
       @emit "ct", color
 
     setCT: (color) =>
-      if @_ct is color then return Promise.resolve true
       param = {
         ct: Math.round(@ctmin + color / 100 * (@ctmax-@ctmin)),
         transitiontime: @_transtime

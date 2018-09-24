@@ -705,7 +705,7 @@ module.exports = (env) ->
       if @config.supportsHumidity
         @_setHumidity(data.state.humidity / 100) if data.state?.humidity?
       if @config.supportsPressure
-        @_setPressure(data.state.pressure / 100) if data.state?.pressure?
+        @_setPressure(data.state.pressure / 10) if data.state?.pressure?
       @_setBattery(data.config.battery) if data.config?.battery?
       @_setOnline(data.config.reachable) if data.config?.reachable?
 

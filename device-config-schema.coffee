@@ -86,6 +86,14 @@ module.exports = {
         description: "Raspbee device id"
         type: "integer"
   },
+  RaspBeeSwitch: {
+    title: "Raspbee Switch Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+  },
   RaspBeeDimmer: {
     title: "Raspbee Dimmer Light Device"
     type: "object"

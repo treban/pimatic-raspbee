@@ -113,7 +113,6 @@ module.exports = (env) ->
           dev=devices[i]
           @lclass = switch
             when dev.type == "On/Off plug-in unit" then "RaspBeeSwitch"
-            when dev.type == "On/Off plug-in unit" then "RaspBeeDimmer"
             when dev.type == "Dimmable light" then "RaspBeeDimmer"
             when dev.type == "Color temperature light" then "RaspBeeCT"
             when dev.type == "Color light" then "RaspBeeRGB"

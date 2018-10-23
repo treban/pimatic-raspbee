@@ -32,6 +32,7 @@ module.exports = (env) ->
         RaspBeeMultiSensor,
         RaspBeeWaterSensor,
         RaspBeeRemoteControlNavigator,
+        RaspBeeSwitch,
         RaspBeeDimmer,
         RaspBeeCT,
         RaspBeeRGB,
@@ -111,7 +112,7 @@ module.exports = (env) ->
         for i of devices
           dev=devices[i]
           @lclass = switch
-            when dev.type == "On/Off plug-in unit" then "RaspBeeDimmer"
+            when dev.type == "On/Off plug-in unit" then "RaspBeeSwitch"
             when dev.type == "Dimmable light" then "RaspBeeDimmer"
             when dev.type == "Color temperature light" then "RaspBeeCT"
             when dev.type == "Color light" then "RaspBeeRGB"
@@ -673,7 +674,7 @@ module.exports = (env) ->
         unit: "°C"
         acronym: @config.temperatureAcronym
       }
-      
+
       if @config.supportsHumidity
         @attributes.humidity = {
           description: "the measured humidity"
@@ -938,6 +939,76 @@ module.exports = (env) ->
 
     getBattery: -> Promise.resolve(@_battery)
 
+  class RaspBeeSwitch extends env.devices.PowerSwitch
+
+    constructor: (@config, lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_presence = lastState?.presence?.value or false
+      @_online = lastState?.online?.value or false
+      @_state = lastState?.state?.value or off
+
+      @addAttribute  'presence',
+        description: "online status",
+        type: t.boolean
+
+      super(@config,lastState)
+
+      myRaspBeePlugin.on "event", (data) =>
+        if data.type is "lights" and data.id is @deviceID
+          @parseEvent(data)
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
+          @parseEvent(res)
+        )
+
+    parseEvent: (data) ->
+      @_setPresence(true)
+      @_setState(data.state.on)
+
+    destroy: ->
+      super()
+
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
+
+    getPresence: -> Promise.resolve(@_presence)
+
+    changeStateTo: (state) ->
+      @_sendState({on: state}).then( () =>
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    _sendState: (param) ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
+          env.logger.debug ("New value send to device #{@name}")
+          #env.logger.debug (param)
+          if res[0].success?
+            return Promise.resolve()
+          else
+            if (res[0].error.type is 3 )
+              @_setPresence(false)
+              return Promise.reject("device #{@name} not reachable")
+            else if (res[0].error.type is 201 )
+              return Promise.reject("device #{@name} is not modifiable. Device is set to off")
+        ).catch( (error) =>
+          return Promise.reject(error)
+        )
+      else
+        env.logger.error ("gateway not online")
+        return Promise.reject()
 
   class RaspBeeDimmer extends env.devices.DimmerActuator
 

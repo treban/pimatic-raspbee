@@ -83,6 +83,8 @@ module.exports = (env) ->
 
     scan:() =>
       @Connector.getSensor().then((devices)=>
+        env.logger.debug("sensor list")
+        env.logger.debug(devices)
         @sensorCollection = {}
         for i of devices
           dev=devices[i]
@@ -109,6 +111,8 @@ module.exports = (env) ->
 
       )
       @Connector.getLight().then((devices)=>
+        env.logger.debug("light list")
+        env.logger.debug(devices)
         for i of devices
           dev=devices[i]
           @lclass = switch
@@ -128,7 +132,6 @@ module.exports = (env) ->
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getGroup().then((devices)=>
-        env.logger.debug(devices)
         for i of devices
     #      env.logger.debug(devices[i])
           dev=devices[i]
@@ -147,7 +150,7 @@ module.exports = (env) ->
 
           do (config) =>
             myRaspBeePlugin.Connector.getScenes(i).then( (res) =>
-              env.logger.debug res
+              #env.logger.debug res
               buttonsArray=[]
               for id, cfg of res
                 buttonsArray.push({
@@ -161,10 +164,10 @@ module.exports = (env) ->
                 id: "scene_#{config.id}_#{config.deviceID}"
                 deviceID: config.deviceID
               }
-              env.logger.debug config
+              #env.logger.debug config
               if buttonsArray.length > 0 and not @inConfig(config.deviceID, "RaspBeeGroupScenes")
                 config.buttons=buttonsArray
-                env.logger.debug config
+                #env.logger.debug config
                 @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "#{config.name}", config )
             ).catch( (err) =>
               env.logger.error(err)
@@ -687,7 +690,7 @@ module.exports = (env) ->
         @attributes.pressure = {
           description: "the measured pressure"
           type: "number"
-          unit: 'kPa'
+          unit: 'hPa'
           acronym: @config.pressureAcronym
         }
 
@@ -706,7 +709,7 @@ module.exports = (env) ->
       if @config.supportsHumidity
         @_setHumidity(data.state.humidity / 100) if data.state?.humidity?
       if @config.supportsPressure
-        @_setPressure(data.state.pressure / 10) if data.state?.pressure?
+        @_setPressure(data.state.pressure ) if data.state?.pressure?
       @_setBattery(data.config.battery) if data.config?.battery?
       @_setOnline(data.config.reachable) if data.config?.reachable?
 
@@ -1351,7 +1354,7 @@ module.exports = (env) ->
       scene_id = null
       for scene in @config.buttons
         if scene.id is parseInt(scene_name) or scene.name is scene_name
-          env.logger.debug scene.name
+          #env.logger.debug scene.name
           scene_id = scene.id
           if myRaspBeePlugin.ready
             myRaspBeePlugin.Connector.setGroupScene(@deviceID, scene_id).then( (res) =>

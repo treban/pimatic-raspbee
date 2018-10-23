@@ -8,8 +8,21 @@ module.exports = (env) ->
   class RaspBeeConnection extends events.EventEmitter
 
     constructor: (@host,@port,@apikey) ->
+      @ws_isalive=false
+      @websocketport=null
+      @host=@host
       super()
+      @connect()
+      reconnect = setInterval ( =>
+        if (@ws_isalive==false)
+          env.logger.error("websocket keep alive error, try to reconnect")
+          @connect()
+        else
+          @ws_isalive=false
+          @ws.ping()
+      ),10000
 
+    connect: () =>
       # Connect to WebSocket
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/config").then( (res) =>
         rconfig = JSON.parse(res)
@@ -18,17 +31,19 @@ module.exports = (env) ->
         env.logger.info("API #{rconfig.apiversion}")
         @websocketport=rconfig.websocketport
         if ( @websocketport != undefined )
-          env.logger.debug("API key valid")
+          env.logger.info("API key valid")
           @ws = new WebSocket('ws://'+@host+':'+@websocketport, {
             perMessageDeflate: false
           })
           @ws.on('open', (data) =>
-            env.logger.debug("Event Receiver connected.")
+            env.logger.info("Event Receiver connected.")
             @emit 'ready'
+            @ws_isalive=true
           )
           @ws.on('message', (data) =>
             jdata = JSON.parse(data)
             env.logger.debug(jdata)
+            @ws_isalive=true
             eventmessage =
               id : parseInt(jdata.id)
               type : jdata.r
@@ -39,7 +54,19 @@ module.exports = (env) ->
           @ws.on('error', (err) =>
             env.logger.error("websocket error")
             env.logger.debug(err)
+            @ws_isalive=false
+            @ws.terminate()
             @emit 'error'
+          )
+          @ws.on('close', (err) =>
+            env.logger.error("websocket closed")
+            env.logger.debug(err)
+            @ws_isalive=false
+            @ws.terminate()
+            @emit 'error'
+          )
+          @ws.on('pong', (pong) =>
+            @ws_isalive=true
           )
         else
           env.logger.error("API key not valid")
@@ -48,6 +75,7 @@ module.exports = (env) ->
         env.logger.debug(err)
         @emit 'error'
       )
+
 
     getSensor: (id) =>
       if (id == undefined)

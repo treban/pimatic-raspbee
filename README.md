@@ -55,12 +55,14 @@ There are three typs of light devices:
   - Color temperature
   - RGB
 
+* **RaspBeeSwitch**
+
 * **RaspBeeDimmerGroup**
 
 * **RaspBeeGroupScenes**
 The scenes are associated with the groups
 and are represented by a button device.
-Afer each restart of pimatic all scenes are updated.
+After each restart of pimatic all scenes are updated.
 
 * **RaspBeeMotionSensor**
 
@@ -116,6 +118,14 @@ set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate g
 * 0.0.7 : New features and BUGFIX
   * Actionprovider for scenes and light color / rgb
   * Scenes are now a standalone device as a button device
+* 0.0.8 : New features and BUGFIX
+  * WebSocket keep alive
+  * support for wall plug
+  * Fix for #16 & #21
+  * debug output for device discovery
+  * xAttributeOptions
+  * pressureAttribute in hPa instead kPa
+
   ----------------------------
 ### Contributors
 

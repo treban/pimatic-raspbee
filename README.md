@@ -125,6 +125,7 @@ set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate g
   * debug output for device discovery
   * xAttributeOptions
   * pressureAttribute in hPa instead kPa
+* 0.0.9 : HOTFIX
 
   ----------------------------
 ### Contributors

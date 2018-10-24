@@ -18,9 +18,10 @@ module.exports = (env) ->
           env.logger.error("websocket keep alive error, try to reconnect")
           @connect()
         else
-          @ws_isalive=false
-          @ws.ping()
-      ),10000
+          if (@ws.readState == 1 )
+            @ws_isalive=false
+            @ws.ping()
+      ),30000
 
     connect: () =>
       # Connect to WebSocket
@@ -60,7 +61,6 @@ module.exports = (env) ->
           )
           @ws.on('close', (err) =>
             env.logger.error("websocket closed")
-            env.logger.debug(err)
             @ws_isalive=false
             @ws.terminate()
             @emit 'error'

@@ -128,7 +128,7 @@ set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate g
   * xAttributeOptions
   * pressureAttribute in hPa instead kPa
 * 0.0.9 : HOTFIX
-
+* 0.0.10 : add device type smart plug
   ----------------------------
 ### Contributors
 

@@ -24,7 +24,9 @@ This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 
 ### Prerequisite
 
-The Raspbee device with the [deCONZ REST API](https://dresden-elektronik.github.io/deconz-rest-doc/) must be installed and configured.
+You need a rasbpee or conbee device and [deCONZ REST API](https://github.com/dresden-elektronik/deconz-rest-plugin/blob/master/README.md#headless-support) must be installed and configured.
+
+An other good solution is to run deconz as a [docker container](https://github.com/marthoc/docker-deconz).
 
 ### Installation
 

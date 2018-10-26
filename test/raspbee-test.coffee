@@ -75,7 +75,7 @@ describe "pimatic", ->
   describe 'startup', ->
 
     it "should startup", (finish) ->
-      startup = require('./startup')
+      startup = require("../node_modules/pimatic/startup")
       startup.startup().then( (fm)->
         framework = fm
         finish()

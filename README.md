@@ -24,17 +24,19 @@ This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 
 ### Prerequisite
 
-You need a rasbpee or conbee device and [deCONZ REST API](https://github.com/dresden-elektronik/deconz-rest-plugin/blob/master/README.md#install-deconz) must be installed and configured.
+You need a rasbpee or conbee device and the [deCONZ REST API](https://github.com/dresden-elektronik/deconz-rest-plugin/blob/master/README.md#install-deconz) must be installed and configured.
 
 An other good solution is to run deconz as a [docker container](https://github.com/marthoc/docker-deconz).
 
+### => [go to the WIKI](https://github.com/treban/pimatic-raspbee/wiki) - there are installation instructions and other useful tips. 
+
 ### Installation
 
-Just activate the plugin in your pimatic config. The plugin manager automatically installs the package with his dependencys.
+Just activate the plugin over the pimatic webUI. The plugin manager automatically installs the package with his dependencys.
 
 ### Configuration
 
-You can load the plugin by adding following in the config.json from your pimatic server:
+You can also load the plugin by adding following in the config.json from your pimatic server:
 
     {
       "plugin": "raspbee",
@@ -46,7 +48,7 @@ You can load the plugin by adding following in the config.json from your pimatic
 
 ### Usages
 
-To create a connection to the raspbee gateway, the gateway must be unlocked.
+To create a connection to the raspbee gateway, **the gateway must be unlocked.**
 Then make a device discovery in pimatic.
 
 ### Supported devices

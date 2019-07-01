@@ -7,7 +7,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
         required: true
       networkopenduration:
         description: "Scan for new device duration"
@@ -89,7 +89,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
       buttons:
         description: "Remote buttons"
         type: "array"

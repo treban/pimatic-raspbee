@@ -21,7 +21,6 @@ module.exports = (env) ->
       @apikey = @config.apikey
       @gatewayip = @config.ip
       @gatewayport = @config.port
-      @developmode = @config.developmode
       @cfg=@config
       @ready=false
       @sensorCollection = {}
@@ -99,9 +98,8 @@ module.exports = (env) ->
         @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Gateway: #{config.name}", config )
 
       @Connector.getLight().then((devices)=>
-        if (@developmode)
-          env.logger.debug("light list")
-          env.logger.debug(devices)
+        env.logger.debug("light list")
+        env.logger.debug(devices)
         for i of devices
           dev=devices[i]
           @lclass = switch
@@ -121,9 +119,8 @@ module.exports = (env) ->
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
       )
       @Connector.getSensor().then((devices)=>
-        if (@developmode)
-          env.logger.debug("sensor list")
-          env.logger.debug(devices)
+        env.logger.debug("sensor list")
+        env.logger.debug(devices)
         for i of devices
           dev=devices[i]
           @addToCollection(i, dev)
@@ -230,15 +227,10 @@ module.exports = (env) ->
             @sensorCollection[uniqueid].config.push({id,parameter,value})
 
     discoverMultiSensors: () =>
-      #env.logger.debug(@sensorCollection)
       for id, device of @sensorCollection
-        #env.logger.debug(device)
         if device.ids.length > 0
-          @lclass = "RaspBeeMultiSensor"
-        #    when device.model == "Plug 01" then "RaspBeeSwitch
-
           config = {
-            class: "RaspBeeMultiSensor", #@lclass,
+            class: "RaspBeeMultiSensor",
             name: device.name,
             id: "raspbee_#{id}",
             deviceID: id,
@@ -251,13 +243,12 @@ module.exports = (env) ->
           env.logger.debug(config.supports)
           newdevice = not @framework.deviceManager.devicesConfig.some (config_device, iterator) =>
             config_device.deviceID is id
-          if (@developmode)
-            env.logger.debug(config)
+          env.logger.debug(config)
           if newdevice
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "MultiDevice: #{config.name} - #{device.model}", config )
 
     connect: () =>
-      @Connector = new RaspBeeConnection(@gatewayip,@gatewayport,@apikey,@developmode)
+      @Connector = new RaspBeeConnection(@gatewayip,@gatewayport,@apikey)
       @Connector.on "event", (data) =>
       #  env.logger.debug(data)
         @emit "event", (data)
@@ -841,7 +832,7 @@ module.exports = (env) ->
       @_setAlarm(data.state.alarm) if data.state?.alarm?
 
       @_setDark(data.state.dark) if data.state?.dark?
-      @_setDark(data.state.fire) if data.state?.fire?
+      @_setFire(data.state.fire) if data.state?.fire?
 
       if data.state?.buttonevent?
         for cmdval in @CmdMap

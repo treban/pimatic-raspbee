@@ -8,14 +8,13 @@ module.exports = (env) ->
 
   class RaspBeeConnection extends events.EventEmitter
 
-    constructor: (host,port,apikey,developmode) ->
+    constructor: (host,port,apikey) ->
       super()
       @ws_isalive=false
       @websocketport=null
       @host=host
       @port=port
       @apikey=apikey
-      @developmode=developmode
       @connect()
       reconnect = setInterval =>
         if not @ws_isalive
@@ -50,9 +49,8 @@ module.exports = (env) ->
           )
           @ws.on('message', (data) =>
             jdata = JSON.parse(data)
-            if (@developmode)
-              env.logger.debug("new message received")
-              env.logger.debug(jdata)
+            env.logger.debug("new message received")
+            env.logger.debug(jdata)
             @ws_isalive=true
             eventmessage =
               id : parseInt(jdata.id)

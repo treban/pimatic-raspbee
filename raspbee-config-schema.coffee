@@ -19,8 +19,4 @@ module.exports = {
       description: "api key"
       type: "string"
       default: ""
-    developmode:
-      description: "Enabled develop debug messages"
-      type: "boolean"
-      default: false
 }

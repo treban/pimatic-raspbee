@@ -19,7 +19,7 @@
     "raspbee-config-schema.coffee",
     "device-config-schema.coffee"
   ],
-  "version": "0.0.10",
+  "version": "0.0.11-beta.0",
   "license": "GPL-2.0",
   "homepage": "https://github.com/treban/pimatic-raspbee",
   "configSchema": "raspbee-config-schema.coffee",

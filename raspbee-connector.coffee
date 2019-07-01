@@ -4,32 +4,39 @@ module.exports = (env) ->
   WebSocket = require 'ws'
   events = require 'events'
   Promise = env.require 'bluebird'
+  fs = require('fs')
 
   class RaspBeeConnection extends events.EventEmitter
 
-    constructor: (@host,@port,@apikey) ->
+    constructor: (host,port,apikey,developmode) ->
+      super()
       @ws_isalive=false
       @websocketport=null
-      @host=@host
-      super()
+      @host=host
+      @port=port
+      @apikey=apikey
+      @developmode=developmode
       @connect()
-      reconnect = setInterval ( =>
-        if (@ws_isalive==false)
+      reconnect = setInterval =>
+        if not @ws_isalive
           env.logger.error("websocket keep alive error, try to reconnect")
+          @emit 'error'
           @connect()
+        else if not @ws.readState
+          @ws_isalive=false
+          @ws.ping()
         else
-          if (@ws.readState == 1 )
-            @ws_isalive=false
-            @ws.ping()
-      ),30000
+          env.logger.error("socket not ready")
+      ,30000
 
     connect: () =>
       # Connect to WebSocket
-      Request("http://"+@host+":"+@port+"/api/"+@apikey+"/config").then( (res) =>
+      Request("http://"+@host+":"+@port+"/api/"+@apikey+"/config", {timeout: 15000}).then( (res) =>
         rconfig = JSON.parse(res)
         env.logger.info("Connection establised")
         env.logger.info("Name #{rconfig.name}")
         env.logger.info("API #{rconfig.apiversion}")
+        env.logger.info("Software Version #{rconfig.swversion}")
         @websocketport=rconfig.websocketport
         if ( @websocketport != undefined )
           env.logger.info("API key valid")
@@ -37,24 +44,29 @@ module.exports = (env) ->
             perMessageDeflate: false
           })
           @ws.on('open', (data) =>
-            env.logger.info("Event Receiver connected.")
+            env.logger.info("Event receiver connected.")
             @emit 'ready'
             @ws_isalive=true
           )
           @ws.on('message', (data) =>
             jdata = JSON.parse(data)
-            env.logger.debug(jdata)
+            if (@developmode)
+              env.logger.debug("new message received")
+              env.logger.debug(jdata)
             @ws_isalive=true
             eventmessage =
               id : parseInt(jdata.id)
               type : jdata.r
               state : jdata.state
               config : jdata.config
+              event: jdata.e
+            eventmessage.newdev = jdata.sensor if jdata.sensor?
+            eventmessage.newdev = jdata.light if jdata.light?
             @emit 'event', (eventmessage)
           )
           @ws.on('error', (err) =>
             env.logger.error("websocket error")
-            env.logger.debug(err)
+            env.logger.error("Error: "+err.cause.message)
             @ws_isalive=false
             @ws.terminate()
             @emit 'error'
@@ -72,19 +84,24 @@ module.exports = (env) ->
           env.logger.error("API key not valid")
       ).catch ( (err) =>
         env.logger.error("Connection could not be establised")
-        env.logger.debug(err)
-        @emit 'error'
+        env.logger.error("Error: "+err.cause.message)
       )
 
+    getConfig: () =>
+      Request("http://"+@host+":"+@port+"/api/"+@apikey+"/config", {timeout: 15000}).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        return Promise.reject("Bad request")
+      )
 
     getSensor: (id) =>
       if (id == undefined)
         id = ""
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/sensors/"+id).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject("Device with ID: "+id+ " not found")
         else
           return Promise.reject("Bad request")
       )
@@ -93,10 +110,10 @@ module.exports = (env) ->
       if (id == undefined)
         id = ""
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/lights/"+id).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject("Light with ID: "+id+ " not found")
         else
           return Promise.reject("Bad request")
       )
@@ -105,20 +122,20 @@ module.exports = (env) ->
       if (id == undefined)
         id = ""
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/groups/"+id).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject("Group with ID: "+id+ " not found")
         else
           return Promise.reject("Bad request")
       )
 
     getScenes: (id) =>
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/groups/"+id+"/scenes").then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject("Scene with ID: "+id+ " not found")
         else
           return Promise.reject("Bad request")
       )
@@ -130,10 +147,10 @@ module.exports = (env) ->
         body: JSON.stringify(param)
       }
       Request(options).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject("Light with ID: "+id+ " not found")
         else
           return Promise.reject("Bad request")
       )
@@ -145,7 +162,7 @@ module.exports = (env) ->
         body: JSON.stringify(param)
       }
       Request(options).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
           return Promise.reject("Device not found")
@@ -160,7 +177,22 @@ module.exports = (env) ->
         body: JSON.stringify(param)
       }
       Request(options).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Device not found")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    setLightConfig: (id,param) =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/lights/'+id+'/config',
+        method: 'PUT',
+        body: JSON.stringify(param)
+      }
+      Request(options).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
           return Promise.reject("Device not found")
@@ -174,7 +206,105 @@ module.exports = (env) ->
         method: 'PUT',
       }
       Request(options).then( (res) =>
-        return JSON.parse(res)
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Device not found")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    discoverLights: () =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/lights',
+        method: 'POST',
+      }
+      Request(options).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Error")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    discoverSensors: () =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/sensors',
+        method: 'POST',
+      }
+      Request(options).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Error")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    checkSensors: () =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/sensors/new',
+        method: 'GET',
+      }
+      Request(options).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Error")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    checkLights: () =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/lights/new',
+        method: 'GET',
+      }
+      Request(options).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
+      ).catch ( (err) =>
+        if (err.statusCode is 404)
+          return Promise.reject("Error")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    createBackup: (path) =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/config/export',
+        method: 'POST',
+      }
+      options2 = {
+        uri: 'http://'+@host+':'+@port+'/deCONZ.tar.gz',
+        method: 'GET',
+        encoding: null
+      }
+      Request(options).then( (res) =>
+        env.logger.debug ("generate backup")
+        Request(options2).then( (res2) =>
+          env.logger.debug ("downloading backup")
+          fs.writeFileSync(path+'/deCONZ-backup.tar.gz', res2)
+          return Promise.resolve(JSON.parse(res))
+        ).catch ( (err) =>
+          env.logger.error(err)
+        )
+      ).catch ( (err) =>
+        env.logger.error(err)
+        if (err.statusCode is 404)
+          return Promise.reject("Error")
+        else
+          return Promise.reject("Bad request")
+      )
+
+    setConfig: (param) =>
+      options = {
+        uri: 'http://'+@host+':'+@port+'/api/'+@apikey+'/config',
+        method: 'PUT',
+        body: JSON.stringify(param)
+      }
+      Request(options).then( (res) =>
+        return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
           return Promise.reject("Device not found")
@@ -190,11 +320,11 @@ module.exports = (env) ->
       }
       Request(options).then( (res) =>
         response = JSON.parse(res)
-        return response[0].success.username
+        return Promise.resolve(response[0].success.username)
       ).catch ( (err) =>
         env.logger.error("apikey could not be generated")
         if (err.statusCode is 403)
           return Promise.reject("unlock gateway!")
         else
-          return Promise.reject("Bad request!")
+          return Promise.reject("bad request!")
       )

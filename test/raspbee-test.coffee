@@ -7,7 +7,7 @@ describe "pimatic", ->
       locale: "en"
       httpServer:
         enabled: true
-        port: 8080
+        port: 12221
       httpsServer:
         enabled: false
       database:
@@ -23,6 +23,7 @@ describe "pimatic", ->
         "ip" : "localhost",
         "port" : "8080",
         "active": true,
+        "apikey": "testkey"
         "debug": true
       }
     ]

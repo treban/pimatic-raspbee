@@ -5,10 +5,15 @@ module.exports = {
     type: "object"
     extensions: ["xLink"]
     properties:
-      messagecount:
-        description: "Message count to display"
+      deviceID:
+        description: "Raspbee device id"
+        type: "string"
+        required: true
+      networkopenduration:
+        description: "Scan for new device duration"
         type: "integer"
-        default: 10
+        default: 60
+        required: false
   },
   RaspBeeMotionSensor: {
     title: "RaspBee MotionSensor"
@@ -17,7 +22,7 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "string"
+        type: "integer"
         required: true
       resetTime:
         description: "Reset time in seconds"
@@ -84,7 +89,17 @@ module.exports = {
     properties:
       deviceID:
         description: "Raspbee device id"
-        type: "integer"
+        type: "string"
+      buttons:
+        description: "Remote buttons"
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            id:
+              type: "string"
+            text:
+              type: "string"
   },
   RaspBeeSwitch: {
     title: "Raspbee Switch Device"
@@ -130,7 +145,31 @@ module.exports = {
         type: "integer"
         default: 5
   },
+  RaspBeeRGBCT: {
+    title: "Raspbee Color Temperature Light Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
+  },
   RaspBeeDimmerGroup: {
+    title: "Raspbee Dimmer Light Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
+  },
+  RaspBeeRGBCTGroup: {
     title: "Raspbee Dimmer Light Device"
     type: "object"
     properties:
@@ -155,14 +194,29 @@ module.exports = {
         type: "array"
         items:
           type: "integer"
-      supportsHumidity:
-        description: "does this sensor measure humidity?"
+      supportsBattery:
+        description: "does this sensor have a battery?"
         type: "boolean"
         default: false
-      supportsPressure:
-        description: "does this sensor measure pressure?"
-        type: "boolean"
-        default: false
+      supports:
+        description: "Feature List"
+        type: "array"
+        default: []
+        items:
+          type: "string"
+      configMap:
+        description: "Config map"
+        type: "array"
+        default: []
+        items:
+          type:"object"
+          properties:
+            id:
+              type: "integer"
+            parameter:
+              type: "string"
+            value:
+              type: "integer"
       temperatureAcronym:
         description: "temperature acronym"
         type: "string"
@@ -175,6 +229,10 @@ module.exports = {
         description: "pressure acronym"
         type: "string"
         default: "P"
+      resetTime:
+        description: "Auto reset time in milliseconds"
+        type: "integer"
+        default: 100
   },
   RaspBeeGroupScenes: {
     title: "RaspBeeScenes"

@@ -64,6 +64,9 @@ ul.items .raspbee-device .ui-temp {
   margin-top: 8px;
 }
 
+.button-control.ui-controlgroup.ui-controlgroup-horizontal.ui-corner-all.ui-mini.no-carousel-slide.raspbee {
+  margin-right: 30px
+}
 
 ul.items .raspbee-device .ui-temp .wbutton {
   background-color: #efd275;

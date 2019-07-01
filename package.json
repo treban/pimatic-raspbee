@@ -11,6 +11,7 @@
     "app/spectrum.js",
     "color.coffee",
     "action.coffee",
+    "predicate.coffee",
     "raspbee.coffee",
     "raspbee-connector.coffee",
     "README.md",
@@ -23,27 +24,30 @@
   "homepage": "https://github.com/treban/pimatic-raspbee",
   "configSchema": "raspbee-config-schema.coffee",
   "dependencies": {
-    "request-promise": "^2.0.1",
-    "ws": "^1.1.1"
+    "request-promise": "^4.2.4",
+    "ws": "^7.0.0"
   },
   "devDependencies": {
     "blanket": "^1.2.3",
-    "bluebird": "^3.4.7",
-    "coffeescript": "^1.12.3",
+    "bluebird": "^3.5.5",
+    "coffeescript": "^2.4.1",
+    "coffee-script": "1.12.7",
+    "pimatic": ">0.9.0",
     "cassert": "^0.1.2",
     "coffee-errors": "^0.8.6",
-    "decl-api": "0.0.22",
-    "grunt": "^1.0.1",
-    "grunt-cli": "^1.2.0",
+    "decl-api": "0.0.24",
+    "grunt": "^1.0.4",
+    "grunt-cli": "^1.3.2",
     "grunt-coffeelint": "0.0.16",
-    "grunt-mocha-test": "^0.13.2",
-    "mocha": "^3.2.0",
-    "sqlite3": "^3.1.8"
+    "grunt-mocha-test": "^0.13.3",
+    "mocha": "^6.1.4",
+    "sqlite3": "^4.0.8"
   },
   "keywords": [
     "pimatic",
     "raspbee",
-    "zigbee"
+    "zigbee",
+    "conbee"
   ],
   "peerDependencies": {
     "pimatic": ">=0.9.0"

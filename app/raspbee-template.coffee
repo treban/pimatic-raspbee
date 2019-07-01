@@ -118,6 +118,40 @@ $(document).on 'templateinit', (event) ->
       super(templData, @device)
       @_colorChanged = false
       #COLOR
+      @pickId = "pick-#{templData.deviceId}"
+
+    getItemTemplate: => 'raspbee-rgb'
+
+    afterRender: (elements) ->
+      super(elements)
+      $(elements).on("dragstop.spectrum","#"+@pickId, (color) =>
+          @_changeColor(color)
+      )
+      @colorPicker = $(elements).find('.light-color')
+      @colorPicker.spectrum
+        preferredFormat: 'rgb'
+        showButtons: false
+        allowEmpty: true
+      $('.sp-container').addClass('ui-corner-all ui-shadow')
+
+    _changeColor: (color) ->
+      r = @colorPicker.spectrum('get').toRgb()['r']
+      g = @colorPicker.spectrum('get').toRgb()['g']
+      b = @colorPicker.spectrum('get').toRgb()['b']
+      return @device.rest.setRGB(
+          {r: r, g: g, b: b}, global: no
+        ).then(ajaxShowToast, ajaxAlertFail)
+
+
+##############################################################
+# TradfriDimmerTempSliderItem
+##############################################################
+  class RaspBeeRGBCTItem extends RaspBeeDimmerItem
+
+    constructor: (templData, @device) ->
+      super(templData, @device)
+      @_colorChanged = false
+      #COLOR
       @csliderId = "color-#{templData.deviceId}"
       colorAttribute = @getAttribute('ct')
       unless colorAttribute?
@@ -130,7 +164,7 @@ $(document).on 'templateinit', (event) ->
       )
       @pickId = "pick-#{templData.deviceId}"
 
-    getItemTemplate: => 'raspbee-rgb'
+    getItemTemplate: => 'raspbee-rgbct'
 
     onSliderStop2: ->
       @csliderEle.slider('disable')
@@ -168,7 +202,41 @@ $(document).on 'templateinit', (event) ->
           {r: r, g: g, b: b}, global: no
         ).then(ajaxShowToast, ajaxAlertFail)
 
+
+  class RaspBeeSystemItem extends pimatic.PresenceItem
+    constructor: (templData, @device) ->
+      super(templData, @device)
+      @lbutID = "lbutton-#{templData.deviceId}"
+      @sbutID = "sbutton-#{templData.deviceId}"
+
+    getItemTemplate: => 'raspbee-system'
+
+    afterRender: (elements) ->
+      super(elements)
+
+    setLightDiscovery: ->
+      @device.rest.setLightDiscovery(global: no)
+        .done(ajaxShowToast)
+        .fail(ajaxAlertFail)
+
+    setSensorDiscovery: ->
+      @device.rest.setSensorDiscovery(global: no)
+        .done(ajaxShowToast)
+        .fail(ajaxAlertFail)
+
+    setBackup: ->
+      @device.rest.setBackup(global: no)
+        .done(ajaxShowToast)
+        .fail(ajaxAlertFail)
+
+    setConfig: ->
+      @device.rest.setConfig(global: no)
+        .done(ajaxShowToast)
+        .fail(ajaxAlertFail)
+
   pimatic.templateClasses['raspbee-dimmer'] = RaspBeeDimmerItem
   pimatic.templateClasses['raspbee-ct'] = RaspBeeCTItem
   pimatic.templateClasses['raspbee-rgb'] = RaspBeeRGBItem
+  pimatic.templateClasses['raspbee-rgbct'] = RaspBeeRGBCTItem
   pimatic.templateClasses['raspbee-remote'] = RaspBeeRemoteControlItem
+  pimatic.templateClasses['raspbee-system'] = RaspBeeSystemItem

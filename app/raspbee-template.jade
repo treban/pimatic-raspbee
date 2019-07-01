@@ -40,7 +40,7 @@ script#raspbee-ct-template(type='text/template')
         input.cdimmer(min="0", max="100", step="1", data-highlight="true",
           data-bind="attr: { id: csliderId }, value: csliderValue")
 
-script#raspbee-rgb-template(type='text/template')
+script#raspbee-rgbct-template(type='text/template')
   li.sortable.no-header.raspbee-device
     div.item-inner
       label.device-label(data-bind="text: name, tooltip: $data.labelTooltipHtml")
@@ -58,3 +58,33 @@ script#raspbee-rgb-template(type='text/template')
         div.ui-midspacer
         input.cdimmer(min="0", max="100", step="1", data-highlight="true",
           data-bind="attr: { id: csliderId }, value: csliderValue")
+
+
+script#raspbee-rgb-template(type='text/template')
+  li.sortable.no-header.raspbee-device
+    div.item-inner
+      label.device-label(data-bind="text: name, tooltip: $data.labelTooltipHtml")
+      div.ui-dimlevel
+        select.switch(data-bind="attr: { id: switchId }, value: switchState")
+          option(value="off")=__('Off')
+          option(value="on")=__('On')
+        span.presence(data-bind="template: {name: 'attribute-template', data: $data.device.getAttribute('presence'), afterRender: $data.afterAttributeRender }")
+        div.ui-smallspacer
+        input.ddimmer(min="0", max="100", step="1", data-highlight="true",
+          data-bind="attr: { id: dsliderId }, value: dsliderValue")
+      div.ui-color
+        div.ui-colorpicker(class="ui-flipswitch ui-corner-all")
+          input.light-color(data-bind="attr: { id: pickId }")
+
+
+script#raspbee-system-template(type='text/template')
+  li.sortable.device.no-header.raspbee-device
+    label.device-label(data-bind="text: name, tooltip: $data.labelTooltipHtml")
+    div.ui-temp
+      span.attributes(data-bind="template: { name: 'attribute-template', foreach: $data.device.attributes, afterRender: $data.afterAttributeRender }")
+      .button-control.ui-controlgroup.ui-controlgroup-horizontal.ui-corner-all.ui-mini.no-carousel-slide.raspbee(data-role='controlgroup', data-type='horizontal', data-mini='true', data-enhanced='true')
+        .ui-controlgroup-controls
+          a.ui-first-child.ui-btn.ui-corner-all.dlbutton(name='discover lights', data-bind='click: setLightDiscovery') Discover Lights
+          a.ui-btn.ui-corner-all.dsbutton(name='disover sensors', data-bind='click: setSensorDiscovery') Discover Sensors
+          a.ui-btn.ui-corner-all.scbutton(name='send config', data-bind='click: setConfig') Send config
+          a.ui-last-child.ui-btn.ui-corner-all.cbbutton(name='create backup', data-bind='click: setBackup') Create Backup

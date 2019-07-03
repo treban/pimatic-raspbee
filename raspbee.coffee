@@ -1738,7 +1738,7 @@ module.exports = (env) ->
       return Promise.reject("Unknown scene "+scene_name)
 
 ##############################################################
-# Tradfri HUB Presence Device
+# Raspbee system device
 ##############################################################
 
   class RaspBeeSystem extends env.devices.Sensor

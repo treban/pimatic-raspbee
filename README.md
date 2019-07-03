@@ -9,17 +9,13 @@ pimatic-raspbee
 
 This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 
-!! This plugin is still in beta state !!
-
 #### Features
 
 * Auto-discover devices, groups and sensors
-* Support for motion sensors
-* Support for remote controls and switches
-* Support for temperature, humidity, pressure and much more sensors
 * Control lights
 * Control groups
-* Controle scenes
+* Control scenes
+* Support for all sensors
 * Observe changes over websocket
 
 ### Prerequisite
@@ -28,7 +24,7 @@ You need a rasbpee or conbee device and the [deCONZ REST API](https://github.com
 
 An other good solution is to run deconz as a [docker container](https://github.com/marthoc/docker-deconz).
 
-### => [go to the WIKI](https://github.com/treban/pimatic-raspbee/wiki) - there are installation instructions and other useful tips. 
+### => [go to the WIKI](https://github.com/treban/pimatic-raspbee/wiki) - there are installation instructions and other useful tips.
 
 ### Installation
 
@@ -48,7 +44,7 @@ You can also load the plugin by adding following in the config.json from your pi
 
 ### Usages
 
-To create a connection to the raspbee gateway, **the gateway must be unlocked.**
+To create a connection to the raspbee gateway, **the gateway must be unlocked over the deconz UI.**
 Then make a device discovery in pimatic.
 
 ### Supported devices
@@ -58,8 +54,10 @@ There are three typs of light devices:
   - Dimmer only
   - Color temperature
   - RGB
+  - RGB + color temperature
 
 * **RaspBeeSwitch**
+An on/off switch device.s
 
 * **RaspBeeDimmerGroup**
 
@@ -77,28 +75,7 @@ The sensor has an optional lux attribute.
 * **RaspBeeMultiSensor**
 Devices with more than one sensor are represented as multidevices.
 
-* **RaspBeeWaterSensor**
 
-* **RaspBeeLightSensor**
-
-* **RaspBeeContactSensor**
-
-* **RaspBeeSwitchSensor**
-
-* **RaspBeeRemoteControlNavigator**
-
-This device represents a 5 button remote control and is like a normal button device.
-There a predefined buttons which are useable in rules with this format: raspbee_deviceid_button
-possible button are:
-power / up /
-down /
-left /
-right /
-longpower /
-longright /
-longleft /
-longup /
-longdown
 
 ### ActionProvider
 
@@ -131,6 +108,13 @@ set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate g
   * pressureAttribute in hPa instead kPa
 * 0.0.9 : HOTFIX
 * 0.0.10 : add device type "Smart plug" for aqara devices fix for #19 & #22
+* 0.0.11 : New features and BUGFIX
+  * BUGFIX #28 & #29
+  * Groups with ct and rgb #22
+  * support for all sensor types #23
+  * device and sensor discovery over pimatic #25
+  * backup over pimatic #26
+  * new RaspBeeMultiSensor device which supports all sensor types
 
 ----------------------------
 ### Contributors

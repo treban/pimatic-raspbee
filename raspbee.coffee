@@ -391,7 +391,7 @@ module.exports = (env) ->
 
     getInfos: ->
       if (myRaspBeePlugin.ready)
-        myRaspBeePlugin.Connector.getSensor(@deviceID).then ( (res) =>
+        myRaspBeePlugin.Connector.getSensor(@deviceID).then( (res) =>
           @_updateAttributes res
         ).catch( (error) =>
           env.logger.error (error)

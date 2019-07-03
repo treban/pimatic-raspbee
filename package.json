@@ -24,21 +24,21 @@
   "homepage": "https://github.com/treban/pimatic-raspbee",
   "configSchema": "raspbee-config-schema.coffee",
   "dependencies": {
-    "bluebird": "^3.4.7",
-    "request-promise": "^4.2.4",
-    "ws": "^5.2.2",
-    "cassert": "^0.1.2",
-    "decl-api": "0.0.22"
+    "request-promise": "^2.0.1",
+    "ws": "^3.3.1",
   },
   "devDependencies": {
     "blanket": "^1.2.3",
+    "bluebird": "^3.4.7",
     "coffeescript": "^1.12.3",
+    "cassert": "^0.1.2",
     "coffee-script": "1.12.7",
     "coffee-errors": "^0.8.6",
+    "decl-api": "0.0.22",
     "grunt": "^1.0.1",
     "grunt-cli": "^1.2.0",
     "grunt-coffeelint": "0.0.16",
-    "grunt-mocha-test": "^0.13.3",
+    "grunt-mocha-test": "^0.13.2",
     "mocha": "^3.2.0",
     "pimatic": ">=0.9.0"
   },

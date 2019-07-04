@@ -74,7 +74,11 @@ Then make a device discovery in pimatic.
 
 #### Sensors
 
-All sensors are represented as a RaspBeeMultiDevice
+All sensors are represented as a `RaspBeeMultiDevice`.
+The device has 3 arrays.
+* associated device IDs
+* support parameter flag
+* configMap
 
 | supports parameter flag  | Feature                      | Deconz Resource Type
 | ------------------------ | ---------------------------- | ---------------
@@ -108,18 +112,39 @@ The other device types are DEPRECATED
 * RaspBeeSwitchSensor
 * RaspBeeWaterSensor
 
+### RaspBeeSystem device
+
+#### discover lights & discover sensors
+
+#### create backup
+This button creates a local backup of the deconz config
+
+#### send config
+This button sends for all devices all config parater to the deconz apikey.
+
+
+
+
+
+
+
 
 ### ActionProvider
 
-* **"activate group scene <name>"**  
+* **"activate group scene -name-"**  
 
-* **"set color temp <name> to <value>"**  
+* **"set color temp -name- to -value-"**  
 
-* **"set color rgb <name> to <hexvalue>"**
+* **"set color rgb -name- to -hexvalue-"**
+
+Example:
+set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
+
 
 ### PredicateProvider
 
-* **"received from <name Flur event "2001""**  >
+* **"received from -name- event "2001""**
+
 
 ### ButtonEvents
 |   | Value | Action
@@ -136,9 +161,6 @@ The other device types are DEPRECATED
 | 9 | x009  | Tilt
 | 10 | x010 | Many press
 
-
-Example:
-set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
 
 
 ### ChangeLog

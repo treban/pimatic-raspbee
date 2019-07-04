@@ -95,7 +95,7 @@ module.exports = (env) ->
 ################################################################################
   class RaspBeeTempActionHandler extends env.actions.ActionHandler
 
-    constructor: (framework, device, valueTokens) ->
+    constructor: (framework, device, valueTokens, @transitionTime=null) ->
       super()
       @framework=framework
       @device=device
@@ -120,7 +120,7 @@ module.exports = (env) ->
         if simulate
           __("would change %s to %s%%", @device.name, value)
         else
-          @device.setCT(value).then( => __("change color temp from %s to %s%%", @device.name, value) )
+          @device.setCT(value,@transitionTime).then( => __("change color temp from %s to %s%%", @device.name, value) )
       )
 
     executeAction: (simulate) =>
@@ -153,7 +153,8 @@ module.exports = (env) ->
       device = null
       valueTokens = null
       match = null
-
+      transitionMs = null
+      
       if RaspBeeDevices.length is 0 then return
 
       M(input, context)
@@ -167,6 +168,10 @@ module.exports = (env) ->
                 return
               device = d
               valueTokens = ts
+
+              m = matchTransitionExpression(m, ( (m, {time, unit, timeMs}) =>
+                transitionMs = timeMs/100
+              ), yes)
               match = m.getFullMatch()
             )
         )
@@ -185,7 +190,7 @@ module.exports = (env) ->
         return {
           token: match
           nextInput: input.substring(match.length)
-          actionHandler: new RaspBeeTempActionHandler(@framework, device, valueTokens)
+          actionHandler: new RaspBeeTempActionHandler(@framework, device, valueTokens, transitionMs)
         }
       else
         return null
@@ -195,7 +200,7 @@ module.exports = (env) ->
 ################################################################################
   class RaspBeeRGBActionHandler extends env.actions.ActionHandler
 
-    constructor: (framework, device, hex) ->
+    constructor: (framework, device, hex, @transitionTime=null) ->
       super()
       @framework=framework
       @device=device
@@ -216,7 +221,7 @@ module.exports = (env) ->
         if simulate
           Promise.resolve __("would set color %s to %s%", @device.name)
         else
-          @device.setRGB(@r,@g,@b).then( => __("set color %s to %s", @device.name, @hex) )
+          @device.setRGB(@r,@g,@b,@transitionTime).then( => __("set color %s to %s", @device.name, @hex) )
       )
 
     executeAction: (simulate) =>
@@ -244,7 +249,7 @@ module.exports = (env) ->
       r = null
       g = null
       b = null
-
+      transitionMs = null
       m.matchDevice RaspBeeDevices, (m, d) ->
         if device? and device.id isnt d.id
           context?.addError(""""#{input.trim()}" is ambiguous.""")
@@ -254,6 +259,9 @@ module.exports = (env) ->
           m.or [
             (m) -> m.match [/(#[a-fA-F\d]{6})(.*)/], (m, s) ->
               hex = s.trim()
+              m = matchTransitionExpression(m, ( (m, {time, unit, timeMs}) =>
+                transitionMs = timeMs/100
+              ), yes)
               match = m.getFullMatch()
           ]
       if match?
@@ -261,7 +269,7 @@ module.exports = (env) ->
         return {
           token : match
           nextInput: input.substring(match.length)
-          actionHandler: new RaspBeeRGBActionHandler(@framework, device, hex)
+          actionHandler: new RaspBeeRGBActionHandler(@framework, device, hex, transitionMs)
         }
       else
         return null

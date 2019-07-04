@@ -1411,10 +1411,10 @@ module.exports = (env) ->
       @_ct = color
       @emit "ct", color
 
-    setCT: (color) =>
+    setCT: (color,time) =>
       param = {
         ct: Math.round(@ctmin + color / 100 * (@ctmax-@ctmin)),
-        transitiontime: @_transtime
+        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         @_setCt(color)
@@ -1502,11 +1502,11 @@ module.exports = (env) ->
 
     getSat: -> Promise.resolve(@_sat)
 
-    setRGB: (r,g,b) ->
-      xy=Color.rgb_to_xyY(r,g,b)
+    setRGB: (r,g,b,time) ->
+      xy=Color.rgb_to_xyY(r,g,b,time)
       param = {
         xy: xy,
-        transitiontime: @_transtime
+        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         #@_setCt(color)
@@ -1594,11 +1594,11 @@ module.exports = (env) ->
 
     getSat: -> Promise.resolve(@_sat)
 
-    setRGB: (r,g,b) ->
+    setRGB: (r,g,b,time) ->
       xy=Color.rgb_to_xyY(r,g,b)
       param = {
         xy: xy,
-        transitiontime: @_transtime
+        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         #@_setCt(color)

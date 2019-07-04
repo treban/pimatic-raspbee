@@ -17,6 +17,8 @@ This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 * Control scenes
 * Support for all sensors
 * Observe changes over websocket
+* Start pairing for new devices
+* Backup the deconz config
 
 ### Prerequisite
 
@@ -45,36 +47,66 @@ You can also load the plugin by adding following in the config.json from your pi
 ### Usages
 
 To create a connection to the raspbee gateway, **the gateway must be unlocked over the deconz UI.**
+[check the unlock howto](https://github.com/treban/pimatic-raspbee/wiki/Connect-the-raspbee-plugin-to-deconz)
 Then make a device discovery in pimatic.
 
 ### Supported devices
 
-* **RaspBeeLightDevices**
-There are three typs of light devices:
-  - Dimmer only
-  - Color temperature
-  - RGB
-  - RGB + color temperature
+#### Lights
 
-* **RaspBeeSwitch**
-An on/off switch device.s
+| pimatic Device type    | Feature                      | Deconz Resource Type
+| ---------------------- | ---------------------------- | --------------
+| `RaspBeeSwitch`        | switch on/off                | `On/Off plug-in unit` & `Smart plug`
+| `RaspBeeDimmer`        | switch and dimm light        | `Dimmable light`
+| `RaspBeeCT`            | change temperature           | `Color temperature light`
+| `RaspBeeRGB`           | change color                 | `Color light`
+| `RaspBeeRGBCT`         | change color and temperature | `Extended color light`
 
-* **RaspBeeDimmerGroup**
 
-* **RaspBeeGroupScenes**
-The scenes are associated with the groups
-and are represented by a button device.
-After each restart of pimatic all scenes are updated.
+#### Groups
 
-* **RaspBeeMotionSensor**
+| pimatic Device type               | Feature                      | Deconz Resource Type
+| --------------------------------- | ---------------------------- | --------------
+| `RaspBeeDimmerGroup` (DEPRECATED) | switch and dimm              | `Group`
+| `RaspBeeRGBCTGroup`               | change color and temperature | `Group`
+| `RaspBeeGroupScenes`              | change temperature           | `Group Scenes`
 
-The motion sensor is like a normal presence sensor.
-You can configure an optional auto-reset time in milliseconds.
-The sensor has an optional lux attribute.
 
-* **RaspBeeMultiSensor**
-Devices with more than one sensor are represented as multidevices.
+#### Sensors
 
+All sensors are represented as a RaspBeeMultiDevice
+
+| supports parameter flag  | Feature                      | Deconz Resource Type
+| ------------------------ | ---------------------------- | ---------------
+| `battery`                | %                            | (any battery-powered sensor)
+| `lowbattery`             | bool                         | (any IAS Zone sensor)
+| `carbon`                 | bool                         | ZHACarbonMonoxide
+| `switch`                 | string                       | ZHASwitch
+| `fire`                   | bool                         | ZHAFire
+| `humidity`               | %                            | ZHAHumidity
+| `temperature`            | °C                           | ZHATemperature and any sensor with temperaure support
+| `presence`               | bool                         | ZHAPresence
+| `dark`                   | bool                         | ZHAPresence & ZHALightLevel
+| `lux`                    | lux                          | ZHALightLevel
+| `daylight`               | bool                         | ZHALightLevel
+| `open`                   | bool                         | ZHAOpenClose
+| `pressure`               | hPA                          | ZHAPressure
+| `water`                  | bool                         | ZHAWater
+| `vibration`              | bool                         | ZHAVibration
+| `tampered`               | bool                         | (any IAS Zone sensor)
+| `consumption`            | Wh                           | ZHAConsumption
+| `power`                  | W                            | ZHAPower & ZHAConsumption
+| `voltage`                | V                            | ZHAPower
+| `current`                | mA                           | ZHAPower
+
+
+The other device types are DEPRECATED
+
+* RaspBeeMotionSensor
+* RaspBeeContactSensor
+* RaspBeeLightSensor
+* RaspBeeSwitchSensor
+* RaspBeeWaterSensor
 
 
 ### ActionProvider
@@ -85,8 +117,29 @@ Devices with more than one sensor are represented as multidevices.
 
 * **"set color rgb <name> to <hexvalue>"**
 
+### PredicateProvider
+
+* **"received from <name Flur event "2001""**  >
+
+### ButtonEvents
+|   | Value | Action
+| - | ----- | -------
+| 0 | x000  | Initial Press
+| 1 | x001  | Hold
+| 2 | x002  | Release (after press)
+| 3 | x003  | Release (after hold)
+| 4 | x004  | Double press
+| 5 | x005  | Triple press
+| 6 | x006  | Quadruple press
+| 7 | x007  | Shake
+| 8 | x008  | Drop
+| 9 | x009  | Tilt
+| 10 | x010 | Many press
+
+
 Example:
 set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
+
 
 ### ChangeLog
 * 0.0.2 : First public version

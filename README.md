@@ -62,6 +62,8 @@ Then make a device discovery in pimatic.
 | `RaspBeeRGB`           | change color                 | `Color light`
 | `RaspBeeRGBCT`         | change color and temperature | `Extended color light`
 
+HINT: The Color device does not support color temperature.
+That's why i changed the device mapping.
 
 #### Groups
 
@@ -71,14 +73,24 @@ Then make a device discovery in pimatic.
 | `RaspBeeRGBCTGroup`               | change color and temperature | `Group`
 | `RaspBeeGroupScenes`              | change temperature           | `Group Scenes`
 
+I have created a new group with all color controls.
 
 #### Sensors
 
-All sensors are represented as a `RaspBeeMultiDevice`.
+All sensors are represented as a `RaspBeeMultiDevice`.  
+
 The device has 3 arrays.
-* associated device IDs
-* support parameter flag
-* configMap
+
+* associated device IDs  
+This array contains all device ID associated to this object.
+
+* support parameter flag  
+This array contains all supported attributes.
+
+* configMap  
+During a device discovery, the config map is filled automatically.
+Customizable values ​​are stored in this config map.
+A custom config can be written to the API via the button on the new RaspBeeSystem device.
 
 | supports parameter flag  | Feature                      | Deconz Resource Type
 | ------------------------ | ---------------------------- | ---------------
@@ -104,7 +116,7 @@ The device has 3 arrays.
 | `current`                | mA                           | ZHAPower
 
 
-The other device types are DEPRECATED
+#### The other device types are DEPRECATED
 
 * RaspBeeMotionSensor
 * RaspBeeContactSensor
@@ -115,18 +127,14 @@ The other device types are DEPRECATED
 ### RaspBeeSystem device
 
 #### discover lights & discover sensors
+This button starts a light or sensor detection from the deconz api.
 
 #### create backup
-This button creates a local backup of the deconz config
+This button creates a local backup of the deconz config.  
+The target folder is configurable. (default folder is the pimatic-app folder)
 
 #### send config
-This button sends for all devices all config parater to the deconz apikey.
-
-
-
-
-
-
+This button sends for all devices all config parameter (configMap) to the deconz apikey.
 
 
 ### ActionProvider
@@ -137,9 +145,13 @@ This button sends for all devices all config parater to the deconz apikey.
 
 * **"set color rgb -name- to -hexvalue-"**
 
-Example:
+Example:  
 set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
 
+optional a transtime can be specified.
+
+Example:  
+dim raspbee Flur to 100 transition time 2s and set color rgb Light RGB to #FF0000 with transition time 2s
 
 ### PredicateProvider
 
@@ -183,13 +195,16 @@ set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate g
   * pressureAttribute in hPa instead kPa
 * 0.0.9 : HOTFIX
 * 0.0.10 : add device type "Smart plug" for aqara devices fix for #19 & #22
-* 0.0.11 : New features and BUGFIX
+
+* 0.1.0 : New features and BUGFIX
   * BUGFIX #28 & #29
-  * Groups with ct and rgb #22
+  * Groups device now with ct and rgb #22
   * support for all sensor types #23
   * device and sensor discovery over pimatic #25
   * backup over pimatic #26
+  * homekit support for hap plugin #30
   * new RaspBeeMultiSensor device which supports all sensor types
+  * new raspbee system device
 
 ----------------------------
 ### Contributors

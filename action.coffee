@@ -33,15 +33,15 @@ module.exports = (env) ->
       onSceneMatch = (m, {scene}) =>
         matchingScene = scene
 
-      TradfriDevices = _(@framework.deviceManager.devices).values().filter(
+      RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
         (device) => _.includes [
           'RaspBeeGroupScenes',
         ], device.config.class
       ).value()
 
-      if TradfriDevices.length is 0 then return
+      if RaspBeeDevices.length is 0 then return
 
-      for id, d of TradfriDevices
+      for id, d of RaspBeeDevices
         for s in d.config.buttons
           scenes.push [{device: d, scene: s.name}, s.name]
           @deviceScenes[s.name] = d
@@ -154,7 +154,7 @@ module.exports = (env) ->
       valueTokens = null
       match = null
       transitionMs = null
-      
+
       if RaspBeeDevices.length is 0 then return
 
       M(input, context)

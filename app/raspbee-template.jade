@@ -60,6 +60,25 @@ script#raspbee-rgbct-template(type='text/template')
           data-bind="attr: { id: csliderId }, value: csliderValue")
 
 
+script#raspbee-group-rgbct-template(type='text/template')
+  li.sortable.no-header.raspbee-device
+    div.item-inner
+      label.device-label(data-bind="text: name, tooltip: $data.labelTooltipHtml")
+      div.ui-dimlevel
+        select.switch(data-bind="attr: { id: switchId }, value: switchState")
+          option(value="off")=__('Off')
+          option(value="on")=__('On')
+        div.ui-midspacer
+        input.ddimmer(min="0", max="100", step="1", data-highlight="true",
+          data-bind="attr: { id: dsliderId }, value: dsliderValue")
+      div.ui-color
+        div.ui-colorpicker(class="ui-flipswitch ui-corner-all")
+          input.light-color(data-bind="attr: { id: pickId }")
+        div.ui-midspacer
+        input.cdimmer(min="0", max="100", step="1", data-highlight="true",
+          data-bind="attr: { id: csliderId }, value: csliderValue")
+
+
 script#raspbee-rgb-template(type='text/template')
   li.sortable.no-header.raspbee-device
     div.item-inner

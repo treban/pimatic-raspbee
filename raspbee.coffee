@@ -1435,6 +1435,8 @@ module.exports = (env) ->
 
   class RaspBeeRGBCTGroup extends RaspBeeRGBCT
 
+    template: 'raspbee-group-rgbct'
+
     constructor: (@config,lastState) ->
       super(@config,lastState)
       myRaspBeePlugin.on "event", (data) =>

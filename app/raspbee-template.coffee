@@ -110,7 +110,7 @@ $(document).on 'templateinit', (event) ->
       )
 
 ##############################################################
-# TradfriDimmerTempSliderItem
+# RaspBeeRGBItem
 ##############################################################
   class RaspBeeRGBItem extends RaspBeeDimmerItem
 
@@ -144,7 +144,7 @@ $(document).on 'templateinit', (event) ->
 
 
 ##############################################################
-# TradfriDimmerTempSliderItem
+# RaspBeeRGBCTItem
 ##############################################################
   class RaspBeeRGBCTItem extends RaspBeeDimmerItem
 
@@ -203,6 +203,14 @@ $(document).on 'templateinit', (event) ->
         ).then(ajaxShowToast, ajaxAlertFail)
 
 
+##############################################################
+# RaspBeeGroupRGBCTItem
+##############################################################
+  class RaspBeeGroupRGBCTItem extends RaspBeeRGBCTItem
+
+    getItemTemplate: => 'raspbee-group-rgbct'
+
+
   class RaspBeeSystemItem extends pimatic.PresenceItem
     constructor: (templData, @device) ->
       super(templData, @device)
@@ -240,3 +248,4 @@ $(document).on 'templateinit', (event) ->
   pimatic.templateClasses['raspbee-rgbct'] = RaspBeeRGBCTItem
   pimatic.templateClasses['raspbee-remote'] = RaspBeeRemoteControlItem
   pimatic.templateClasses['raspbee-system'] = RaspBeeSystemItem
+  pimatic.templateClasses['raspbee-group-rgbct'] = RaspBeeGroupRGBCTItem

@@ -145,6 +145,8 @@ This button sends for all devices all config parameter (configMap) to the deconz
 
 * **"set color rgb -name- to -hexvalue-"**
 
+* **"dim raspbee -name- to -value-"**
+
 Example:  
 set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
 
@@ -156,6 +158,9 @@ dim raspbee Flur to 100 transition time 2s and set color rgb Light RGB to #FF000
 ### PredicateProvider
 
 * **"received from -name- event "2001""**
+
+Example:
+recieved from Switch1 event "2001"
 
 
 ### ButtonEvents
@@ -197,14 +202,22 @@ dim raspbee Flur to 100 transition time 2s and set color rgb Light RGB to #FF000
 * 0.0.10 : add device type "Smart plug" for aqara devices fix for #19 & #22
 
 * 0.1.0 : New features and BUGFIX
-  * BUGFIX #28 & #29
-  * Groups device now with ct and rgb #22
-  * support for all sensor types #23
-  * device and sensor discovery over pimatic #25
-  * backup over pimatic #26
+* BUGFIX #28 & #29
+* Update package dependencies
+  * **a new groups device**  with ct and rgb #22   
+  i have created a new color/rgb group device,
+  so that groups are fully controllable
+  * **a new raspbeesystem device** which represents the deconz api
+      * device and sensor discovery over pimatic #25  
+      * backup deconz api #26
+      * send device configuration to deconz   
+  * **new RaspBeeMultiSensor device** which supports all sensor types   
+  The new sensor device has been completely refactored and supports all sensor types now #23.
+  It also replaces all old sensor devices. However, these are still available for downward compatibility.
   * homekit support for hap plugin #30
-  * new RaspBeeMultiSensor device which supports all sensor types
-  * new raspbee system device
+  * **new action provider for dimming /  all actions with transition time option**   
+  Example: **dim raspbee** Light to 75 **transition time 2s** and set color rgb LightRGB to #FF0000 **with transition time 10s**
+  * new predicate provide: **recieved from** Switch1 event "2001"
 
 ----------------------------
 ### Contributors

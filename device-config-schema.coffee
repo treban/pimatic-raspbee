@@ -50,7 +50,7 @@ module.exports = {
   RaspBeeContactSensor: {
     title: "RaspBee ContactSensor"
     type: "object"
-    extensions: ["xConfirm", "xLink", "xClosedLabel", "xOpenedLabel", "xAttributeOptions"]
+    extensions: ["xLink", "xClosedLabel", "xOpenedLabel", "xAttributeOptions"]
     properties:
       resetTime:
         description: "Optional auto reset time in milli seconds"
@@ -76,6 +76,7 @@ module.exports = {
   RaspBeeLightSensor: {
     title: "RaspBee LightSensor"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       sensorIDs:
         description: "All the ids of the sensors"
@@ -97,6 +98,7 @@ module.exports = {
   RaspBeeSwitchSensor: {
     title: "RaspBee SwitchSensor"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       resetTime:
         description: "Auto reset time in milliseconds"
@@ -122,6 +124,7 @@ module.exports = {
   RaspBeeWaterSensor: {
     title: "RaspBee WaterSensor"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       sensorIDs:
         description: "All the ids of the sensors"

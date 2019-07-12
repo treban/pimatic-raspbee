@@ -278,8 +278,8 @@ module.exports = (env) ->
         method: 'GET',
         encoding: null
       }
+      env.logger.debug ("generate backup")
       Request(options).then( (res) =>
-        env.logger.debug ("generate backup")
         Request(options2).then( (res2) =>
           env.logger.debug ("downloading backup")
           fs.writeFileSync(path+'/deCONZ-backup.tar.gz', res2)

@@ -239,11 +239,8 @@ module.exports = (env) ->
           }
           config.configMap=device.config
           config.supports=JSON.parse(JSON.stringify(device.supports))
-          env.logger.debug(device.supports)
-          env.logger.debug(config.supports)
           newdevice = not @framework.deviceManager.devicesConfig.some (config_device, iterator) =>
             config_device.deviceID is id
-          env.logger.debug(config)
           if newdevice
             @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "MultiDevice: #{config.name} - #{device.model}", config )
 
@@ -374,8 +371,8 @@ module.exports = (env) ->
           acronym: @config.consumtionAcronym
         }
       if "open" in @config.supports
-        @_openclose = lastState?.openclose?.value
-        @attributes.openclose = {
+        @_contact = lastState?.contact?.value
+        @attributes.contact = {
           description: "the measured power"
           type: "boolean"
           labels: ['open', 'close']
@@ -409,9 +406,9 @@ module.exports = (env) ->
           labels: ['carbon detected', 'no carbon']
         }
       if "presence" in @config.supports
-        @_motion = lastState?.motion?.value
-        @attributes.motion = {
-          description: "the motion detection"
+        @_presence = lastState?.presence?.value
+        @attributes.presence = {
+          description: "motion detection"
           type: "boolean"
           labels: ['motion detected', 'no motion']
         }
@@ -491,9 +488,9 @@ module.exports = (env) ->
       @_setHumidity(data.state.humidity / 100) if data.state?.humidity?
       @_setLowbaterry(data.state.lowbattery) if data.state?.lowbattery?
       @_setLux(data.state.lux) if data.state?.lux?
-      @_setMotion(data.state.presence) if data.state?.presence?
+      @_setPresence(data.state.presence) if data.state?.presence?
       @_setOnline(data.config.reachable) if data.config?.reachable?
-      @_setOpenclose(data.state.open) if data.state?.open?
+      @_setContact(data.state.open) if data.state?.open?
       @_setPower(data.state.power) if data.state?.power?
       @_setPressure(data.state.pressure ) if data.state?.pressure?
       @_setSuncalc(data.state.status) if data.state?.status?
@@ -521,13 +518,10 @@ module.exports = (env) ->
     _setCfg: ->
       if myRaspBeePlugin.ready
         for id,cfg of @configMap
-          env.logger.debug(@)
-          env.logger.debug(cfg)
           sconfig = {}
           sconfig[cfg.parameter]=cfg.value
-          env.logger.debug(sconfig)
           myRaspBeePlugin.Connector.setSensorConfig(cfg.id,sconfig).then( (res) =>
-            env.logger.info ("config send")
+            env.logger.debug ("config send to #{@name}:")
             env.logger.debug (res)
           ).catch((error) =>
             env.logger.error ("error : #{error}")
@@ -568,10 +562,10 @@ module.exports = (env) ->
       @_lux = value
       @emit 'lux', value
 
-    _setMotion: (value) ->
-      if @_motion is value then return
-      @_motion = value
-      @emit 'motion', value
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
 
     _setWater: (value) ->
       if @_water is value then return
@@ -603,10 +597,10 @@ module.exports = (env) ->
       @_voltage = value
       @emit 'voltage', value
 
-    _setOpenclose: (value) ->
-      if @_openclose is value then return
-      @_openclose = value
-      @emit 'openclose', value
+    _setContact: (value) ->
+      if @_contact is value then return
+      @_contact = value
+      @emit 'contact', value
 
     _setVibration: (value) ->
       if @_vibration is value then return
@@ -682,9 +676,9 @@ module.exports = (env) ->
     getHumidity: -> Promise.resolve(@_humidity)
     getLowbattery: -> Promise.resolve(@_lowbattery)
     getLux: -> Promise.resolve(@_lux)
-    getMotion: -> Promise.resolve(@_motion)
+    getPresence: -> Promise.resolve(@_presence)
     getOnline: -> Promise.resolve(@_online)
-    getOpenclose: -> Promise.resolve(@_openclose)
+    getContact: -> Promise.resolve(@_contact)
     getPower: -> Promise.resolve(@_power)
     getPressure: -> Promise.resolve(@_pressure)
     getSuncalc: -> Promise.resolve(@_suncalc)
@@ -759,6 +753,8 @@ module.exports = (env) ->
 
   class RaspBeeMotionSensor extends RaspBeeMultiSensor
 
+    template: "presence"
+
     constructor: (config,lastState) ->
 
       if config.deviceID?
@@ -775,6 +771,8 @@ module.exports = (env) ->
 ##############################################################
 
   class RaspBeeContactSensor extends RaspBeeMultiSensor
+
+    template: "contact"
 
     constructor: (config,lastState) ->
 
@@ -949,7 +947,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to device #{@name}")
-          #env.logger.debug (param)
+          env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -1056,6 +1054,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to device #{@name}")
+          env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -1418,7 +1417,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setGroupState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to group #{@name}")
-          #    env.logger.debug (param)
+          env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -1452,7 +1451,7 @@ module.exports = (env) ->
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setGroupState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to group #{@name}")
-          #    env.logger.debug (param)
+          env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
@@ -1526,7 +1525,7 @@ module.exports = (env) ->
 # Raspbee system device
 ##############################################################
 
-  class RaspBeeSystem extends env.devices.Sensor
+  class RaspBeeSystem extends env.devices.ButtonsDevice
 
     template: "raspbee-system"
     _presence: undefined
@@ -1606,7 +1605,7 @@ module.exports = (env) ->
     setLightDiscovery: () ->
       if myRaspBeePlugin.ready
         myRaspBeePlugin.Connector.discoverLights().then( (res) =>
-          env.logger.debug ("Start new pairing mode for "+@networkopenduration+" seconds" )
+          env.logger.info ("Start pairing mode for "+@networkopenduration+" seconds" )
           clearInterval(@discover)
           @discover = setInterval ( =>
             myRaspBeePlugin.Connector.checkLights().then( (res) =>
@@ -1628,7 +1627,7 @@ module.exports = (env) ->
     setSensorDiscovery: () ->
       if myRaspBeePlugin.ready
         myRaspBeePlugin.Connector.discoverSensors().then( (res) =>
-          env.logger.debug ("Start new pairing mode for "+@networkopenduration+" seconds" )
+          env.logger.info ("Start new pairing mode for "+@networkopenduration+" seconds" )
           clearInterval(@discover)
           @count = 1
           @discover = setInterval ( =>

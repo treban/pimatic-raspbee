@@ -1,9 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-## [0.1.0]
+## [0.1.0][Unreleased]
 ### Added
 * a new groups device **RaspBeeRGBCTGroup**  with ct and rgb #22   
 * a new **RaspBeeSystem** device which represents the deconz api
@@ -15,13 +13,10 @@ All notable changes to this project will be documented in this file.
   Example: **dim raspbee** Light to 75 **transition time 2s** and set color rgb LightRGB to #FF0000 **with transition time 10s**
 * new predicate provide: **recieved from** Switch1 event "2001"
 
-
 ### Changed
 * **new RaspBeeMultiSensor device** which supports all sensor types   
   The new sensor device has been completely refactored and supports all sensor types now #23.
   It also replaces all old sensor devices. However, these are still available for downward compatibility.
-
-### Removed
 
 ### Fixed
 * #28
@@ -39,8 +34,6 @@ All notable changes to this project will be documented in this file.
 ### Security
 * Update all package dependencies
   (node 4 support still preserved)
-
----
 
 ## [0.0.10]
 ### Added  

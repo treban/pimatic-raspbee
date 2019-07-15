@@ -9,7 +9,7 @@ pimatic-raspbee
 
 This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 
-#### Features
+## Features
 
 * Auto-discover devices, groups and sensors
 * Control lights
@@ -20,7 +20,7 @@ This plugin provides a raspbee interface for [pimatic](https://pimatic.org/).
 * Start pairing for new devices
 * Backup the deconz config
 
-### Prerequisite
+## Prerequisite
 
 You need a rasbpee or conbee device and the [deCONZ REST API](https://github.com/dresden-elektronik/deconz-rest-plugin/blob/master/README.md#install-deconz) must be installed and configured.
 
@@ -28,11 +28,11 @@ An other good solution is to run deconz as a [docker container](https://github.c
 
 ### => [go to the WIKI](https://github.com/treban/pimatic-raspbee/wiki) - there are installation instructions and other useful tips.
 
-### Installation
+## Installation
 
 Just activate the plugin over the pimatic webUI. The plugin manager automatically installs the package with his dependencys.
 
-### Configuration
+## Configuration
 
 You can also load the plugin by adding following in the config.json from your pimatic server:
 
@@ -44,15 +44,15 @@ You can also load the plugin by adding following in the config.json from your pi
       "port": "<deconz port>"
     }
 
-### Usages
+## Usages
 
 To create a connection to the raspbee gateway, **the gateway must be unlocked over the deconz UI.**
 [check the unlock howto](https://github.com/treban/pimatic-raspbee/wiki/Connect-the-raspbee-plugin-to-deconz)
 Then make a device discovery in pimatic.
 
-### Supported devices
+## Supported devices
 
-#### Lights
+### Lights
 
 | pimatic Device type    | Feature                      | Deconz Resource Type
 | ---------------------- | ---------------------------- | --------------
@@ -65,7 +65,7 @@ Then make a device discovery in pimatic.
 HINT: The Color device does not support color temperature.
 That's why i changed the device mapping.
 
-#### Groups
+### Groups
 
 | pimatic Device type               | Feature                      | Deconz Resource Type
 | --------------------------------- | ---------------------------- | --------------
@@ -75,7 +75,7 @@ That's why i changed the device mapping.
 
 I have created a new group device with all color controls.
 
-#### Sensors
+### Sensors
 
 All sensors are represented as a `RaspBeeMultiDevice`.  
 
@@ -118,7 +118,7 @@ A custom config can be written to the API via the button on the new RaspBeeSyste
 | `current`                | mA                           | ZHAPower
 
 
-#### The other device types are DEPRECATED
+### The other device types are DEPRECATED
 
 * RaspBeeMotionSensor
 * RaspBeeContactSensor
@@ -182,11 +182,11 @@ recieved from Switch1 event "2001"
 
 
 
-### CHANGELOG
+## CHANGELOG
 [-> see CHANGELOG](https://github.com/treban/pimatic-raspbee/blob/master/CHANGELOG.md)
 
 ----------------------------
-### Contributors
+## Contributors
 
 * [kosta](https://github.com/treban)
 * [sweebee](https://github.com/sweebee)

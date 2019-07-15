@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [0.1.0][Unreleased]
+## [0.1.0]
 ### Added
 * a new groups device **RaspBeeRGBCTGroup**  with ct and rgb #22   
 * a new **RaspBeeSystem** device which represents the deconz api

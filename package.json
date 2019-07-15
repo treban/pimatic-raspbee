@@ -15,6 +15,7 @@
     "raspbee.coffee",
     "raspbee-connector.coffee",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE",
     "raspbee-config-schema.coffee",
     "device-config-schema.coffee"

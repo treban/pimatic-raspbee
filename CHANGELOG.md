@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ## [0.1.0]
-### Added 
+### Added
 * a new groups device **RaspBeeRGBCTGroup**  with ct and rgb #22   
 * a new **RaspBeeSystem** device which represents the deconz api
   * device and sensor discovery over pimatic #25  
@@ -27,29 +27,30 @@ All notable changes to this project will be documented in this file.
 * #28
 * #29
 
-### Deprecated 
+### Deprecated
 * Following device types are now deprecated
   * RaspBeeMotionSensor
   * RaspBeeContactSensor
   * RaspBeeLightSensor
   * RaspBeeSwitchSensor
   * RaspBeeWaterSensor
+  * RaspBeeDimmerGroup
 
-### Security 
+### Security
 * Update all package dependencies
   (node 4 support still preserved)
-  
+
 ---
 
 ## [0.0.10]
 ### Added  
 * "Smart plug"
-### Fixed 
+### Fixed
 * #19
 * #22
 
 ## [0.0.9]
-### Fixed 
+### Fixed
 * Hotfix, plugin not starting
 
 ## [0.0.8]
@@ -59,8 +60,8 @@ All notable changes to this project will be documented in this file.
 * debug output for device discovery
 * xAttributeOptions
 * pressureAttribute in hPa instead kPa
-  
-### Fixed 
+
+### Fixed
 * #16
 * #21
 
@@ -68,22 +69,22 @@ All notable changes to this project will be documented in this file.
 ### Added  
 * Actionprovider for scenes and light color / rgb
 * Scenes are now a standalone device as a button device
-  
+
 ## [0.0.6]
-### Fixed 
+### Fixed
 * Hotfix, plugin not starting
 
 ## [0.0.5]
-### Added 
+### Added
 * MultiSensor devices
 * Scenes
 
 ## [0.0.4]
-### Fixed 
+### Fixed
 * Some BUGFIX
 
 ## [0.0.3]
-### Fixed 
+### Fixed
 * BUGFIX #1
 
 ## [0.0.2]

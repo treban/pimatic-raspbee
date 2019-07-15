@@ -70,10 +70,10 @@ That's why i changed the device mapping.
 | pimatic Device type               | Feature                      | Deconz Resource Type
 | --------------------------------- | ---------------------------- | --------------
 | `RaspBeeDimmerGroup` (DEPRECATED) | switch and dimm              | `Group`
-| `RaspBeeRGBCTGroup`               | change color and temperature | `Group`
-| `RaspBeeGroupScenes`              | change temperature           | `Group Scenes`
+| `RaspBeeRGBCTGroup` (NEW)         | change color and temperature | `Group`
+| `RaspBeeGroupScenes`              | switch scene on              | `Group Scenes`
 
-I have created a new group with all color controls.
+I have created a new group device with all color controls.
 
 #### Sensors
 
@@ -91,6 +91,8 @@ This array contains all supported attributes.
 During a device discovery, the config map is filled automatically.
 Customizable values ​​are stored in this config map.
 A custom config can be written to the API via the button on the new RaspBeeSystem device.
+
+**Supported resource types:**
 
 | supports parameter flag  | Feature                      | Deconz Resource Type
 | ------------------------ | ---------------------------- | ---------------
@@ -147,12 +149,12 @@ This button sends for all devices all config parameter (configMap) to the deconz
 
 * **"dim raspbee -name- to -value-"**
 
-Example:  
+**Example:**  
 set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
 
-optional a transtime can be specified.
+**Optional** a -transtime- can be specified. This allows the changeover to be time-controlled.
 
-Example:  
+**Example:**  
 dim raspbee Flur to 100 transition time 2s and set color rgb Light RGB to #FF0000 with transition time 2s
 
 ### PredicateProvider
@@ -180,44 +182,8 @@ recieved from Switch1 event "2001"
 
 
 
-### ChangeLog
-* 0.0.2 : First public version
-* 0.0.3 : BUGFIX #1
-* 0.0.4 : BUGFIX
-* 0.0.5 : New features and BUGFIX
-  * MultiSensor devices
-  * Scenes
-* 0.0.6 : HOTFIX
-* 0.0.7 : New features and BUGFIX
-  * Actionprovider for scenes and light color / rgb
-  * Scenes are now a standalone device as a button device
-* 0.0.8 : New features and BUGFIX
-  * WebSocket keep alive
-  * support for wall plug
-  * Fix for #16 & #21
-  * debug output for device discovery
-  * xAttributeOptions
-  * pressureAttribute in hPa instead kPa
-* 0.0.9 : HOTFIX
-* 0.0.10 : add device type "Smart plug" for aqara devices fix for #19 & #22
-
-* 0.1.0 : New features and BUGFIX
-* BUGFIX #28 & #29
-* Update package dependencies
-  * **a new groups device**  with ct and rgb #22   
-  i have created a new color/rgb group device,
-  so that groups are fully controllable
-  * **a new raspbeesystem device** which represents the deconz api
-      * device and sensor discovery over pimatic #25  
-      * backup deconz api #26
-      * send device configuration to deconz   
-  * **new RaspBeeMultiSensor device** which supports all sensor types   
-  The new sensor device has been completely refactored and supports all sensor types now #23.
-  It also replaces all old sensor devices. However, these are still available for downward compatibility.
-  * homekit support for hap plugin #30
-  * **new action provider for dimming /  all actions with transition time option**   
-  Example: **dim raspbee** Light to 75 **transition time 2s** and set color rgb LightRGB to #FF0000 **with transition time 10s**
-  * new predicate provide: **recieved from** Switch1 event "2001"
+### CHANGELOG
+[-> see CHANGELOG](https://github.com/treban/pimatic-raspbee/blob/master/CHANGELOG.md)
 
 ----------------------------
 ### Contributors

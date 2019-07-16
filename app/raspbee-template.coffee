@@ -211,7 +211,7 @@ $(document).on 'templateinit', (event) ->
     getItemTemplate: => 'raspbee-group-rgbct'
 
 
-  class RaspBeeSystemItem extends pimatic.PresenceItem
+  class RaspBeeSystemItem extends pimatic.DeviceItem
     constructor: (templData, @device) ->
       super(templData, @device)
       @lbutID = "lbutton-#{templData.deviceId}"
@@ -242,6 +242,39 @@ $(document).on 'templateinit', (event) ->
         .done(ajaxShowToast)
         .fail(ajaxAlertFail)
 
+
+  class RaspBeeMultiItem extends pimatic.DeviceItem
+    constructor: (templData, @device) ->
+      super(templData, @device)
+      console.log(@device)
+      if "presence" in @device.config.supports
+        @getAttribute('presence').value.subscribe( =>
+          @updateClass()
+        )
+
+    getItemTemplate: => 'device'
+
+    afterRender: (elements) ->
+      super(elements)
+      if "presence" in @device.config.supports
+        @presenceEle = $(elements).find('.attr-presence')
+        @updateClass()
+
+    updateClass: ->
+      value = @getAttribute('presence').value()
+      if @presenceEle?
+        switch value
+          when true
+            @presenceEle.addClass('value-present')
+            @presenceEle.removeClass('value-absent')
+          when false
+            @presenceEle.removeClass('value-present')
+            @presenceEle.addClass('value-absent')
+          else
+            @presenceEle.removeClass('value-absent')
+            @presenceEle.removeClass('value-present')
+      return
+
   pimatic.templateClasses['raspbee-dimmer'] = RaspBeeDimmerItem
   pimatic.templateClasses['raspbee-ct'] = RaspBeeCTItem
   pimatic.templateClasses['raspbee-rgb'] = RaspBeeRGBItem
@@ -249,3 +282,4 @@ $(document).on 'templateinit', (event) ->
   pimatic.templateClasses['raspbee-remote'] = RaspBeeRemoteControlItem
   pimatic.templateClasses['raspbee-system'] = RaspBeeSystemItem
   pimatic.templateClasses['raspbee-group-rgbct'] = RaspBeeGroupRGBCTItem
+  pimatic.templateClasses['raspbee-multi'] = RaspBeeMultiItem

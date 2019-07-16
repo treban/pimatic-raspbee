@@ -309,7 +309,7 @@ module.exports = {
       resetTime:
         description: "Auto reset time in milliseconds"
         type: "integer"
-        default: 100
+        default: 1000
   },
   RaspBeeGroupScenes: {
     title: "RaspBeeScenes"

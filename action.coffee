@@ -147,6 +147,8 @@ module.exports = (env) ->
         (device) => _.includes [
           'RaspBeeCT',
           'RaspBeeRGB',
+          'RaspBeeRGBCT',
+          'RaspBeeRGBCTGroup'
         ], device.config.class
       ).value()
 
@@ -238,6 +240,8 @@ module.exports = (env) ->
       RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
         (device) => _.includes [
           'RaspBeeRGB'
+          'RaspBeeRGBCT',
+          'RaspBeeRGBCTGroup'
         ], device.config.class
       ).value()
 
@@ -292,6 +296,7 @@ module.exports = (env) ->
           'RaspBeeCT',
           'RaspBeeRGB',
           'RaspBeeDimmerGroup',
+          'RaspBeeRGBCT',
           'RaspBeeRGBCTGroup'
         ], device.config.class
       ).value()

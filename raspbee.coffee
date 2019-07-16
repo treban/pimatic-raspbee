@@ -270,7 +270,9 @@ module.exports = (env) ->
 # RaspBee MultiSensor
 ##############################################################
 
-  class RaspBeeMultiSensor extends env.devices.Device
+  class RaspBeeMultiSensor extends env.devices.Sensor
+
+    template: "raspbee-multi"
 
     constructor: (@config,lastState) ->
       if @config.supportsHumidity?
@@ -289,6 +291,7 @@ module.exports = (env) ->
       @configMap = @config.configMap
       @_online = lastState?.online?.value or false
       @attributes = {}
+      @actions = {}
       @_resetTimeout = null
       @CmdMap = []
 
@@ -375,7 +378,7 @@ module.exports = (env) ->
         @attributes.contact = {
           description: "the measured power"
           type: "boolean"
-          labels: ['open', 'close']
+          labels: ['closed', 'opened']
         }
       if "water" in @config.supports
         @_water = lastState?.water?.value
@@ -406,7 +409,7 @@ module.exports = (env) ->
           labels: ['carbon detected', 'no carbon']
         }
       if "presence" in @config.supports
-        @_presence = lastState?.presence?.value
+        @_presence = lastState?.presence?.value or false
         @attributes.presence = {
           description: "motion detection"
           type: "boolean"
@@ -476,7 +479,7 @@ module.exports = (env) ->
       myRaspBeePlugin.on "ready", () =>
         @getInfos()
 
-    _updateAttributes: (data) ->
+    _updateAttributes: (data,first=false) ->
       @_setAlarm(data.state.alarm) if data.state?.alarm?
       @_setBattery(data.config.battery) if data.config?.battery?
       @_setCarbon(data.state.carbonmonoxide) if data.state?.carbonmonoxide?
@@ -494,7 +497,7 @@ module.exports = (env) ->
       @_setPower(data.state.power) if data.state?.power?
       @_setPressure(data.state.pressure ) if data.state?.pressure?
       @_setSuncalc(data.state.status) if data.state?.status?
-      @_setSwitch(data.state.buttonevent) if data.state?.buttonevent?
+      @_setSwitch(data.state.buttonevent.toString()) if (data.state?.buttonevent?) and not first
       @_setTemperature(data.config.temperature / 100) if data.config?.temperature?
       @_setTemperature(data.state.temperature / 100) if data.state?.temperature?
       @_setVibration(data.state.vibration) if data.state?.vibration?
@@ -506,11 +509,11 @@ module.exports = (env) ->
           if cmdval.getCommand() == data.state.buttonevent.toString()
             cmdval.emit('change', 'event')
 
-    getInfos: ->
+    getInfos: (first) ->
       if (myRaspBeePlugin.ready)
         for id in @sensorIDs
           myRaspBeePlugin.Connector.getSensor(id).then((res) =>
-            @_updateAttributes res
+            @_updateAttributes(res,true)
           ).catch( (error) =>
             env.logger.error (error)
           )
@@ -598,9 +601,9 @@ module.exports = (env) ->
       @emit 'voltage', value
 
     _setContact: (value) ->
-      if @_contact is value then return
-      @_contact = value
-      @emit 'contact', value
+      if @_contact is !value then return
+      @_contact = !value
+      @emit 'contact', !value
 
     _setVibration: (value) ->
       if @_vibration is value then return
@@ -654,6 +657,7 @@ module.exports = (env) ->
         when value == 210 then "DUSK"
         when value == 220 then "NAUTICAL DUSK"
         when value == 230 then "NIGHT START"
+        else  value.toString()
       @emit 'suncalc', @_suncalc
 
     _setSwitch: (value) ->
@@ -663,7 +667,7 @@ module.exports = (env) ->
         @emit 'switch', @_switch
       ), @config.resetTime
       @_switch = value
-      @emit 'switch', value
+      @emit 'switch', @_switch
 
     getAlarm: -> Promise.resolve(@_alarm)
     getBattery: -> Promise.resolve(@_battery)
@@ -1246,7 +1250,7 @@ module.exports = (env) ->
       )
 
     setRGB: (r,g,b,time) ->
-      xy=Color.rgb_to_xyY(r,g,b,time)
+      xy=Color.rgb_to_xyY(r,g,b)
       param = {
         xy: xy,
         transitiontime: time or @_transtime
@@ -1525,10 +1529,9 @@ module.exports = (env) ->
 # Raspbee system device
 ##############################################################
 
-  class RaspBeeSystem extends env.devices.ButtonsDevice
+  class RaspBeeSystem extends env.devices.Device
 
     template: "raspbee-system"
-    _presence: undefined
 
     constructor: (@config,lastState) ->
       @name = @config.name
@@ -1536,15 +1539,15 @@ module.exports = (env) ->
       @deviceID = @config.deviceID
       @networkopenduration = @config.networkopenduration ? @configDefaults.networkopenduration
       @backupfolder = @config.backupfolder ? null
-      @_presence = lastState?.presence?.value or true
+      @_online = false
       @count = 0
 
 
       myRaspBeePlugin.on "ready", (data) =>
-        @_setPresence(true)
+        @_setOnline(true)
 
       myRaspBeePlugin.on "error", (data) =>
-        @_setPresence(false)
+        @_setOnline(false)
 
       myRaspBeePlugin.on "event", (data) =>
         @parseEvent(data)
@@ -1567,20 +1570,20 @@ module.exports = (env) ->
       super()
 
     attributes:
-      presence:
+      online:
         description: "deconz reachability"
         type: t.boolean
-        labels: ['present', 'absent']
+        labels: ['online', 'offline']
 
     actions:
-      getPresence:
-        description: "Returns the current presence state"
+      getOnline:
+        description: "Returns the current online state"
         returns:
-          presence:
+          online:
             type: t.boolean
-      changePresenceTo:
+      changeOnlineTo:
         params:
-          presence:
+          online:
             type: "boolean"
       setLightDiscovery:
         description: 'discover light devices'
@@ -1591,16 +1594,16 @@ module.exports = (env) ->
       setConfig:
         description: 'create device backup'
 
-    _setPresence: (value) ->
-      if @_presence is value then return
-      @_presence = value
-      @emit 'presence', value
+    _setOnline: (value) ->
+      if @_online is value then return
+      @_online = value
+      @emit 'online', value
 
-    changePresenceTo: (presence) ->
-      @_setPresence(presence)
+    changeOnlineTo: (online) ->
+      @_setOnline(online)
       return Promise.resolve()
 
-    getPresence: -> Promise.resolve(@_presence)
+    getOnline: -> Promise.resolve(@_online)
 
     setLightDiscovery: () ->
       if myRaspBeePlugin.ready

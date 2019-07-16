@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+
+## [0.1.1]
+### added
+* RuleManager: RGBCT now also color changeable
+
+### Fixed
+* #31 Motion on GUI not visable
+* #32 Contact sensore was the other way round
+* RuleManager Error - RaspBeeSystem not a buttondevice
+* fix the exception that occurs during error handling when the connection to deconz does not work.
+
+### Changed
+* Default reset timeout for switch sensors now 1 sec. (100 ms previously)
+
 ## [0.1.0]
 ### Added
 * a new groups device **RaspBeeRGBCTGroup**  with ct and rgb #22   

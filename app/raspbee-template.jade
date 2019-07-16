@@ -97,11 +97,10 @@ script#raspbee-rgb-template(type='text/template')
 
 
 script#raspbee-system-template(type='text/template')
-  li.sortable.device.no-header.raspbee-device
+  li.sortable.button.no-header.raspbee-device
     label.device-label(data-bind="text: name, tooltip: $data.labelTooltipHtml")
-    div.ui-temp
-      span.attributes(data-bind="template: { name: 'attribute-template', foreach: $data.device.attributes, afterRender: $data.afterAttributeRender }")
-      .button-control.ui-controlgroup.ui-controlgroup-horizontal.ui-corner-all.ui-mini.no-carousel-slide.raspbee(data-role='controlgroup', data-type='horizontal', data-mini='true', data-enhanced='true')
+    span.attributes(data-bind="template: { name: 'attribute-template', foreach: $data.device.attributes, afterRender: $data.afterAttributeRender }")
+    div.buttons.button-control.ui-controlgroup.ui-controlgroup-horizontal.ui-corner-all.ui-mini.no-carousel-slide(data-role='controlgroup', data-type='horizontal', data-mini='true', data-enhanced='true')
         .ui-controlgroup-controls
           a.ui-first-child.ui-btn.ui-corner-all.dlbutton(name='discover lights', data-bind='click: setLightDiscovery') Discover Lights
           a.ui-btn.ui-corner-all.dsbutton(name='disover sensors', data-bind='click: setSensorDiscovery') Discover Sensors

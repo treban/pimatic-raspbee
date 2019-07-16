@@ -64,7 +64,7 @@ module.exports = (env) ->
           )
           @ws.on('error', (err) =>
             env.logger.error("websocket error")
-            env.logger.error("Error: "+err.cause.message)
+            env.logger.error(err.message)
             @ws_isalive=false
             @ws.terminate()
             @emit 'error'
@@ -82,7 +82,7 @@ module.exports = (env) ->
           env.logger.error("API key not valid")
       ).catch ( (err) =>
         env.logger.error("Connection could not be establised")
-        env.logger.error("Error: "+err.cause.message)
+        env.logger.error(err.message)
       )
 
     getConfig: () =>

@@ -284,7 +284,6 @@ module.exports = (env) ->
       assert @hueExpr? or @satExpr?
 
     executeAction: (@simulate) =>
-      # First evaluate an expression into a value if needed
 
       if @hueExpr? and isNaN(@hueExpr)
         huePromise = @framework.variableManager.evaluateExpression(@hueExpr)
@@ -300,13 +299,13 @@ module.exports = (env) ->
     _changeHueSat: (hueValue, satValue) =>
       if hueValue? and satValue?
         f = (hue, sat) => @device.changeHueSatTo hue, sat, @transitionTime
-        msg = "changed color to hue #{hueValue}%% and sat #{satValue}%%"
+        msg = "changed color to hue #{hueValue}% and sat #{satValue}%"
       else if hueValue?
         f = (hue, sat) => @device.changeHueTo hue, @transitionTime
-        msg = "changed color to hue #{hueValue}%%"
+        msg = "changed color to hue #{hueValue}%"
       else if satValue?
         f = (hue, sat) => @device.changeSatTo sat, @transitionTime
-        msg = "changed color to sat #{satValue}%%"
+        msg = "changed color to sat #{satValue}%"
       msg += " transition time #{@transitionTime}ms" if @transitionTime?
 
       if @simulate
@@ -366,7 +365,6 @@ module.exports = (env) ->
           )
         ])
 
-      # optional "transition 5s"
       transitionMs = null
       match = matchTransitionExpression(match, (m, {time, unit, timeMs}) =>
         transitionMs = timeMs

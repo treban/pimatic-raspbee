@@ -54,10 +54,12 @@ module.exports = (env) ->
             @ws_isalive=true
             eventmessage =
               id : parseInt(jdata.id)
-              type : jdata.r
+              type: jdata.t
+              event: jdata.e
+              resource : jdata.r
               state : jdata.state
               config : jdata.config
-              event: jdata.e
+              uniqueid : jdata.uniqueid
             eventmessage.newdev = jdata.sensor if jdata.sensor?
             eventmessage.newdev = jdata.light if jdata.light?
             @emit 'event', (eventmessage)

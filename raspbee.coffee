@@ -470,7 +470,7 @@ module.exports = (env) ->
 
       super()
       myRaspBeePlugin.on "event", (data) =>
-        if data.id in @sensorIDs and data.type is "sensors"
+        if data.id in @sensorIDs and data.resource is "sensors" and data.event is "changed"
           @_updateAttributes data
 
       myRaspBeePlugin.on "config", () =>
@@ -821,7 +821,7 @@ module.exports = (env) ->
       ]
       super(@config,lastState)
       myRaspBeePlugin.on "event", (data) =>
-        if data.type is "sensors" and data.id is @deviceID
+        if data.resource is "sensors" and data.id is @deviceID and data.event is "changed"
           if (data.state != undefined)
             switch data.state.buttonevent
               when 1002 then @buttonPressed("raspbee_#{@deviceID}_power")
@@ -912,7 +912,7 @@ module.exports = (env) ->
         type: t.boolean
       super()
       myRaspBeePlugin.on "event", (data) =>
-        if data.type is "lights" and data.id is @deviceID
+        if data.resource is "lights" and data.id is @deviceID and data.event is "changed"
           @parseEvent(data)
 
       @getInfos()
@@ -990,7 +990,7 @@ module.exports = (env) ->
 
       super()
       myRaspBeePlugin.on "event", (data) =>
-        if data.type is "lights" and data.id is @deviceID
+        if data.resource is "lights" and data.id is @deviceID and data.event is "changed"
           @parseEvent(data)
 
       @getInfos()
@@ -1158,8 +1158,9 @@ module.exports = (env) ->
             type: t.number
           sat:
             type: t.number
-          val:
+          time:
             type: t.number
+            optional: yes
       @actions.setRGB =
         description: 'set light color'
         params:
@@ -1174,11 +1175,17 @@ module.exports = (env) ->
         params:
           hue:
             type: t.number
+          time:
+            type: t.number
+            optional: yes
       @actions.changeSatTo =
         description: 'set light color'
         params:
           sat:
             type: t.number
+          time:
+            type: t.number
+            optional: yes
       super(@config,lastState)
 
     parseEvent: (data) ->
@@ -1214,7 +1221,7 @@ module.exports = (env) ->
       param = {
         hue: parseInt(hue/100*65535),
 # not working with transtime
-        transitiontime: time or @_transtime
+#        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         return Promise.resolve()
@@ -1227,7 +1234,7 @@ module.exports = (env) ->
       param = {
         sat: parseInt (sat/100*254),
 # not working with transtime
-        transitiontime: time or @_transtime
+#        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         @_setSat sat
@@ -1242,8 +1249,8 @@ module.exports = (env) ->
         hue: (hue/100*65535),
         transitiontime: time or @_transtime
       }
-      p1 = @changeSatTo(sat)
-      p2 = @changeHueTo(hue)
+      p1 = @changeSatTo(sat,time)
+      p2 = @changeHueTo(hue,time)
 
       Promise.all([p1,p2]).then( () =>
         @_setHue hue
@@ -1269,13 +1276,12 @@ module.exports = (env) ->
     destroy: ->
       super()
 
-  class RaspBeeRGB extends RaspBeeDimmer
+  class RaspBeeRGB extends RaspBeeCT
 
     @_color = 0
     @_hue = 0
     @_sat = 0
-
-    template: 'raspbee-rgb'
+    template: 'raspbee-rgbct'
 
     constructor: (@config,lastState) ->
       @addAttribute  'hue',
@@ -1291,8 +1297,9 @@ module.exports = (env) ->
             type: t.number
           sat:
             type: t.number
-          val:
+          time:
             type: t.number
+            optional: yes
       @actions.setRGB =
         description: 'set light color'
         params:
@@ -1307,11 +1314,17 @@ module.exports = (env) ->
         params:
           hue:
             type: t.number
+          time:
+            type: t.number
+            optional: yes
       @actions.changeSatTo =
         description: 'set light color'
         params:
           sat:
             type: t.number
+          time:
+            type: t.number
+            optional: yes
       super(@config,lastState)
 
     parseEvent: (data) ->
@@ -1319,9 +1332,31 @@ module.exports = (env) ->
         @_setHue(data.state.hue / 65535 * 100)
       if data.state.sat?
         @_setSat(data.state.sat / 255 * 100)
+      if data.state.xy?
+        @_setkelvin(data.state.xy)
       super(data)
 
-    getTemplateName: -> "raspbee-rgb"
+    getTemplateName: -> "raspbee-rgbct"
+
+    _setkelvin: (xy) =>
+      kalvin=Color.xyY_to_kelvin(xy[0],xy[1])
+      ncol=(kalvin-2000)/(6500-2000)
+      ncol=Math.min(Math.max(ncol, 0), 1)
+      @_setCt(Math.round(ncol*100))
+
+    setCT: (color,time) =>
+      kalvin=Math.round(2000 + color / 100 * (6500-2000))
+      xy=Color.kelvin_to_xy(kalvin)
+      param = {
+        xy: xy,
+        transitiontime: time or @_transtime
+      }
+      @_sendState(param).then( () =>
+        @_setCt(color)
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
 
     _setHue: (hueVal) ->
       hueVal = parseFloat(hueVal)
@@ -1347,7 +1382,7 @@ module.exports = (env) ->
       param = {
         hue: parseInt(hue/100*65535),
 # not working with transtime
-        transitiontime: time or @_transtime
+#        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         return Promise.resolve()
@@ -1360,7 +1395,7 @@ module.exports = (env) ->
       param = {
         sat: parseInt (sat/100*254),
 # not working with transtime
-        transitiontime: time or @_transtime
+#        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
         @_setSat sat
@@ -1375,8 +1410,8 @@ module.exports = (env) ->
         hue: (hue/100*65535),
         transitiontime: time or @_transtime
       }
-      p1 = @changeSatTo(sat)
-      p2 = @changeHueTo(hue)
+      p1 = @changeSatTo(sat,time)
+      p2 = @changeHueTo(hue,time)
 
       Promise.all([p1,p2]).then( () =>
         @_setHue hue
@@ -1417,7 +1452,7 @@ module.exports = (env) ->
         )
 
     parseEvent: (data) ->
-      if data.type is "groups" and data.id is @deviceID
+      if data.resource is "groups" and data.id is @deviceID and data.event is "changed"
         @_setPresence(true)
         if (data.state.any_on?)
           @_setState(data.state.any_on)
@@ -1451,7 +1486,7 @@ module.exports = (env) ->
         @parseEvent(data)
 
     parseEvent: (data) ->
-      if data.type is "groups" and data.id is @deviceID
+      if data.resource is "groups" and data.id is @deviceID and data.event is "changed"
         @_setPresence(true)
         if (data.state.any_on?)
           @_setState(data.state.any_on)
@@ -1566,10 +1601,14 @@ module.exports = (env) ->
     parseEvent: (data) ->
       if data.event is "added"
         env.logger.info("new device paired!")
-        env.logger.info("> " + data.newdev.name)
-        env.logger.info("> " + data.newdev.manufacturername)
-        env.logger.info("> " + data.newdev.modelid)
-        env.logger.info("> " + data.newdev.type)
+        env.logger.info("ID > " + data.id)
+        env.logger.info("Resource > " + data.resource)
+        env.logger.info("UID > " + data.uniqueid)
+        if data.newdev?
+          env.logger.info("Name > " + data.newdev.name)
+          env.logger.info("Manu > " + data.newdev.manufacturername)
+          env.logger.info("Model > " + data.newdev.modelid)
+          env.logger.info("Type > " + data.newdev.type)
 
     destroy: ->
       super()

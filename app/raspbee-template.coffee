@@ -7,12 +7,10 @@ $(document).on 'templateinit', (event) ->
 
     constructor: (templData, @device) ->
       super(templData, @device)
-      console.log(@device)
 
     getItemTemplate: => 'raspbee-remote'
 
     onButtonPress: (button) =>
-      console.log(button)
       @device.rest.buttonPressed({buttonId: "raspbee_#{@device.config.deviceID}_#{button}"}, global: no)
         .done(ajaxShowToast)
         .fail(ajaxAlertFail)
@@ -129,9 +127,10 @@ $(document).on 'templateinit', (event) ->
       )
       @colorPicker = $(elements).find('.light-color')
       @colorPicker.spectrum
-        preferredFormat: 'rgb'
+        preferredFormat: 'hsv'
         showButtons: false
         allowEmpty: true
+        showInput: true
       $('.sp-container').addClass('ui-corner-all ui-shadow')
 
     _changeColor: (color) ->
@@ -141,6 +140,11 @@ $(document).on 'templateinit', (event) ->
       return @device.rest.setRGB(
           {r: r, g: g, b: b}, global: no
         ).then(ajaxShowToast, ajaxAlertFail)
+#      return @device.rest.changeHueSatTo(
+#          {hue: @colorPicker.spectrum('get').toHsv()['h'] / 360 * 100,
+#          sat: @colorPicker.spectrum('get').toHsv()['s'] * 100},
+#          global: no
+#          )
 
 
 ##############################################################
@@ -151,7 +155,6 @@ $(document).on 'templateinit', (event) ->
     constructor: (templData, @device) ->
       super(templData, @device)
       @_colorChanged = false
-      #COLOR
       @csliderId = "color-#{templData.deviceId}"
       colorAttribute = @getAttribute('ct')
       unless colorAttribute?
@@ -189,9 +192,10 @@ $(document).on 'templateinit', (event) ->
       )
       @colorPicker = $(elements).find('.light-color')
       @colorPicker.spectrum
-        preferredFormat: 'rgb'
+        preferredFormat: 'hsv'
         showButtons: false
         allowEmpty: true
+        showInput: true
       $('.sp-container').addClass('ui-corner-all ui-shadow')
 
     _changeColor: (color) ->
@@ -201,6 +205,12 @@ $(document).on 'templateinit', (event) ->
       return @device.rest.setRGB(
           {r: r, g: g, b: b}, global: no
         ).then(ajaxShowToast, ajaxAlertFail)
+#      return @device.rest.changeHueSatTo(
+#          {hue: @colorPicker.spectrum('get').toHsv()['h'] / 360 * 100,
+#          sat: @colorPicker.spectrum('get').toHsv()['s'] * 100},
+#          global: no
+#          )
+
 
 
 ##############################################################
@@ -246,7 +256,6 @@ $(document).on 'templateinit', (event) ->
   class RaspBeeMultiItem extends pimatic.DeviceItem
     constructor: (templData, @device) ->
       super(templData, @device)
-      console.log(@device)
       if "presence" in @device.config.supports
         @getAttribute('presence').value.subscribe( =>
           @updateClass()

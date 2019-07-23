@@ -47,7 +47,7 @@ module.exports = (env) ->
       Z = 0.03567341*r + 0.0984595*g + 0.22166709*b
       total = X + Y + Z
       if ( total == 0 )
-        return  [ 23000 , 23000 ]
+        return  [ 0.44758179 , 0.4074481 ]
       else
         return [ X / total , Y / total]
 
@@ -70,11 +70,11 @@ module.exports = (env) ->
       yr = y*65535+0.5
 
       [
-        parseInt(xr)
-        parseInt(yr)
+        x
+        y
       ]
 
  # Source: https://en.wikipedia.org/wiki/Color_temperature#Approximation
     @xyY_to_kelvin = (x, y) ->
-      n = (x/65535-0.3320) / (y/65535-0.1858)
+      n = (x-0.3320) / (y-0.1858)
       kelvin = parseInt((-449*n**3 + 3525*n**2 - 6823.3*n + 5520.33) + 0.5)

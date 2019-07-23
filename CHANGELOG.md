@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.2]
+### added
+* #17 RuleManager: hue and sat action provider
+* #17 ColorTemperature for All RGB Bulbs
+
+### Fixed
+* #33 Some devices does not provide all infos on scan
 
 ## [0.1.1]
 ### added

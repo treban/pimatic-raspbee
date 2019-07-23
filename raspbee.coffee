@@ -56,6 +56,7 @@ module.exports = (env) ->
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeTempActionProvider(@framework))
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeDimmerActionProvider(@framework))
       @framework.ruleManager.addPredicateProvider(new RaspBeePredicate.RaspBeePredicateProvider(@framework, @config))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeHueSatActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -504,7 +505,7 @@ module.exports = (env) ->
       @_setVoltage(data.state.voltage) if data.state?.voltage?
       @_setWater(data.state.water) if data.state?.water?
 
-      if data.state?.buttonevent?
+      if data.state?.buttonevent? and not first
         for cmdval in @CmdMap
           if cmdval.getCommand() == data.state.buttonevent.toString()
             cmdval.emit('change', 'event')
@@ -1150,8 +1151,7 @@ module.exports = (env) ->
       @addAttribute  'sat',
           description: "color Temperature",
           type: t.number
-
-      @actions.setHuesat =
+      @actions.changeHueSatTo =
         description: 'set light color'
         params:
           hue:
@@ -1169,12 +1169,12 @@ module.exports = (env) ->
             type: t.number
           b:
             type: t.number
-      @actions.setHue =
+      @actions.changeHueTo =
         description: 'set light color'
         params:
           hue:
             type: t.number
-      @actions.setSat =
+      @actions.changeSatTo =
         description: 'set light color'
         params:
           sat:
@@ -1212,11 +1212,11 @@ module.exports = (env) ->
 
     changeHueTo: (hue, time) ->
       param = {
-        hue: (hue/100*65535),
+        hue: parseInt(hue/100*65535),
+# not working with transtime
         transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
-        #@_setCt(color
         return Promise.resolve()
         @_setHue hue
       ).catch( (error) =>
@@ -1225,7 +1225,8 @@ module.exports = (env) ->
 
     changeSatTo: (sat, time) ->
       param = {
-        sat: (sat/100*254),
+        sat: parseInt (sat/100*254),
+# not working with transtime
         transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
@@ -1241,9 +1242,12 @@ module.exports = (env) ->
         hue: (hue/100*65535),
         transitiontime: time or @_transtime
       }
+      p1 = @changeSatTo(sat)
+      p2 = @changeHueTo(hue)
 
-      @_sendState(param).then( () =>
-        #@_setCt(color
+      Promise.all([p1,p2]).then( () =>
+        @_setHue hue
+        @_setSat sat
         return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)
@@ -1265,7 +1269,6 @@ module.exports = (env) ->
     destroy: ->
       super()
 
-
   class RaspBeeRGB extends RaspBeeDimmer
 
     @_color = 0
@@ -1281,8 +1284,7 @@ module.exports = (env) ->
       @addAttribute  'sat',
           description: "color Temperature",
           type: t.number
-
-      @actions.setHuesat =
+      @actions.changeHueSatTo =
         description: 'set light color'
         params:
           hue:
@@ -1300,12 +1302,12 @@ module.exports = (env) ->
             type: t.number
           b:
             type: t.number
-      @actions.setHue =
+      @actions.changeHueTo =
         description: 'set light color'
         params:
           hue:
             type: t.number
-      @actions.setSat =
+      @actions.changeSatTo =
         description: 'set light color'
         params:
           sat:
@@ -1343,11 +1345,11 @@ module.exports = (env) ->
 
     changeHueTo: (hue, time) ->
       param = {
-        hue: (hue/100*65535),
+        hue: parseInt(hue/100*65535),
+# not working with transtime
         transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
-        #@_setCt(color
         return Promise.resolve()
         @_setHue hue
       ).catch( (error) =>
@@ -1356,7 +1358,8 @@ module.exports = (env) ->
 
     changeSatTo: (sat, time) ->
       param = {
-        sat: (sat/100*254),
+        sat: parseInt (sat/100*254),
+# not working with transtime
         transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
@@ -1372,9 +1375,12 @@ module.exports = (env) ->
         hue: (hue/100*65535),
         transitiontime: time or @_transtime
       }
+      p1 = @changeSatTo(sat)
+      p2 = @changeHueTo(hue)
 
-      @_sendState(param).then( () =>
-        #@_setCt(color
+      Promise.all([p1,p2]).then( () =>
+        @_setHue hue
+        @_setSat sat
         return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)
@@ -1387,7 +1393,6 @@ module.exports = (env) ->
         transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
-        #@_setCt(color)
         return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)

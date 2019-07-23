@@ -278,9 +278,125 @@ module.exports = (env) ->
       else
         return null
 
-################################################################################
-## Color RGB ACTIONS
-################################################################################
+  class RaspBeeHueSatActionHandler extends env.actions.ActionHandler
+    constructor: (@framework, @device, @hueExpr, @satExpr, @transitionTime=null) ->
+      assert @device?
+      assert @hueExpr? or @satExpr?
+
+    executeAction: (@simulate) =>
+      # First evaluate an expression into a value if needed
+
+      if @hueExpr? and isNaN(@hueExpr)
+        huePromise = @framework.variableManager.evaluateExpression(@hueExpr)
+      else
+        huePromise = Promise.resolve @hueExpr
+      if @satExpr? and isNaN(@satExpr)
+        satPromise = @framework.variableManager.evaluateExpression(@satExpr)
+      else
+        satPromise = Promise.resolve @satExpr
+
+      return Promise.join huePromise, satPromise, @_changeHueSat
+
+    _changeHueSat: (hueValue, satValue) =>
+      if hueValue? and satValue?
+        f = (hue, sat) => @device.changeHueSatTo hue, sat, @transitionTime
+        msg = "changed color to hue #{hueValue}%% and sat #{satValue}%%"
+      else if hueValue?
+        f = (hue, sat) => @device.changeHueTo hue, @transitionTime
+        msg = "changed color to hue #{hueValue}%%"
+      else if satValue?
+        f = (hue, sat) => @device.changeSatTo sat, @transitionTime
+        msg = "changed color to sat #{satValue}%%"
+      msg += " transition time #{@transitionTime}ms" if @transitionTime?
+
+      if @simulate
+        return Promise.resolve "would have #{msg}"
+      else
+        return f(hueValue, satValue).then( => msg )
+
+
+  class RaspBeeHueSatActionProvider extends env.actions.ActionProvider
+    constructor: (framework) ->
+      super()
+      @framework=framework
+
+    parseAction: (input, context) =>
+      RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
+        (device) => _.includes [
+          'RaspBeeRGB'
+          'RaspBeeRGBCT',
+          'RaspBeeRGBCTGroup'
+        ], device.config.class
+      ).value()
+
+      hueValueTokens = null
+      satValueTokens = null
+      device = null
+
+      hueMatcher = (next) =>
+        next.match(" hue ")
+          .matchNumericExpression( (next, ts) => hueValueTokens = ts )
+          .match('%', optional: yes)
+      satMatcher = (next) =>
+        next.match([" sat ", " saturation "])
+          .matchNumericExpression( (next, ts) => satValueTokens = ts )
+          .match('%', optional: yes)
+
+      match = M(input, context)
+        .match("set color ")
+        .matchDevice(RaspBeeDevices, (next, d) =>
+          if device? and device.id isnt d.id
+            context?.addError(""""#{input.trim()}" is ambiguous.""")
+            return
+          device = d
+        )
+        .match(" to")
+        .or([
+          ( (next) =>
+            hueMatcher(next)
+              .optional( (next) =>
+                satMatcher(next.match(" and", optional: yes))
+              )
+          ),
+          ( (next) =>
+            satMatcher(next)
+              .optional( (next) =>
+                hueMatcher(next.match(" and", optional: yes))
+              )
+          )
+        ])
+
+      # optional "transition 5s"
+      transitionMs = null
+      match = matchTransitionExpression(match, (m, {time, unit, timeMs}) =>
+        transitionMs = timeMs
+      )
+
+      if not (match? and (hueValueTokens? or satValueTokens?))
+        return null
+
+      if hueValueTokens?.length is 1 and not isNaN(hueValueTokens[0])
+        hueExpr = parseFloat(hueValueTokens[0])
+        unless hueExpr? and (0.0 <= hueExpr <= 100.0)
+          context?.addError("Hue value should be between 0% and 100%")
+          return null
+      else if hueValueTokens?.length > 0
+        hueExpr = hueValueTokens
+
+      if satValueTokens?.length is 1 and not isNaN(satValueTokens[0])
+        satExpr = parseFloat(satValueTokens[0])
+        unless satExpr? and (0.0 <= satExpr <= 100.0)
+          context?.addError("Saturation value should be between 0% and 100%")
+          return null
+      else if satValueTokens?.length > 0
+        satExpr = satValueTokens
+
+      return {
+        token: match.getFullMatch()
+        nextInput: input.substring(match.getFullMatch().length)
+        actionHandler: new RaspBeeHueSatActionHandler(@framework, device, hueExpr, satExpr, transitionMs)
+      }
+
   class RaspbeeDimmerActionProvider extends env.actions.ActionProvider
 
     constructor: (framework) ->
@@ -370,4 +486,5 @@ module.exports = (env) ->
     RaspBeeRGBActionProvider
     RaspBeeTempActionProvider
     RaspbeeDimmerActionProvider
+    RaspBeeHueSatActionProvider
   }

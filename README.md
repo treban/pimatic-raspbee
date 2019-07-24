@@ -62,8 +62,15 @@ Then make a device discovery in pimatic.
 | `RaspBeeRGB`           | change color                 | `Color light`
 | `RaspBeeRGBCT`         | change color and temperature | `Extended color light`
 
-HINT: The Color device does not support color temperature.
-That's why i changed the device mapping.
+HINT:
+
+There are two color devices.
+RaspBeeRGB (`Color light`) emulates the ColorTemperature via a color code.
+RaspBeeRGBCT (`Extended color light`) supports native ColorTemperature actions.
+
+Tradfri bulbs do not support hue/sat actions.
+therefore only RGB values can be set in the rules.
+
 
 ### Groups
 

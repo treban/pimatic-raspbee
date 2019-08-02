@@ -62,14 +62,18 @@ Then make a device discovery in pimatic.
 | `RaspBeeRGB`           | change color                 | `Color light`
 | `RaspBeeRGBCT`         | change color and temperature | `Extended color light`
 
-HINT:
+HINTs:
 
 There are two color devices.
 RaspBeeRGB (`Color light`) emulates the ColorTemperature via a color code.
 RaspBeeRGBCT (`Extended color light`) supports native ColorTemperature actions.
+All lights are detected automatically
 
 Tradfri bulbs do not support hue/sat actions.
 therefore only RGB values can be set in the rules.
+
+Deconz also does not allow you to adjust the color or brightness when the lamp is off.
+Use a delay in rules. First switch on the lamp and then set the values.
 
 
 ### Groups
@@ -92,16 +96,16 @@ The device has 3 arrays.
 This array contains all device ID associated to this object.
 
 * support parameter flag  
-This array contains all supported attributes.
+This array contains all supported ressource types.
 
 * configMap  
 During a device discovery, the config map is filled automatically.
 Customizable values ​​are stored in this config map.
-A custom config can be written to the API via the button on the new RaspBeeSystem device.
+A custom config can be written to the API via the button (send config) on the new RaspBeeSystem device.
 
 **Supported resource types:**
 
-| supports parameter flag  | Feature                      | Deconz Resource Type
+| supports parameter flag  | Unit                         | Deconz Resource Type
 | ------------------------ | ---------------------------- | ---------------
 | `battery`                | %                            | (any battery-powered sensor)
 | `lowbattery`             | bool                         | (any IAS Zone sensor)
@@ -125,7 +129,8 @@ A custom config can be written to the API via the button on the new RaspBeeSyste
 | `current`                | mA                           | ZHAPower
 
 
-### The other device types are DEPRECATED
+### The other sensor types are DEPRECATED
+but still usable
 
 * RaspBeeMotionSensor
 * RaspBeeContactSensor
@@ -133,7 +138,7 @@ A custom config can be written to the API via the button on the new RaspBeeSyste
 * RaspBeeSwitchSensor
 * RaspBeeWaterSensor
 
-### RaspBeeSystem device
+### RaspBeeSystem management device
 
 #### discover lights & discover sensors
 This button starts a light or sensor detection from the deconz api.
@@ -157,7 +162,7 @@ This button sends for all devices all config parameter (configMap) to the deconz
 * **"dim raspbee -name- to -value-"**
 
 **Example:**  
-set color temp Light 1 to 10 and set color rgb Light 3 to #121212 and activate group scene All-ON
+set color temp Light1 to 10 and set color rgb Light2 to #121212 and activate group scene All-ON
 
 **Optional** a -transtime- can be specified. This allows the changeover to be time-controlled.
 
@@ -186,7 +191,6 @@ recieved from Switch1 event "2001"
 | 8 | x008  | Drop
 | 9 | x009  | Tilt
 | 10 | x010 | Many press
-
 
 
 ## CHANGELOG

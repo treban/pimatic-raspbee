@@ -137,14 +137,14 @@ $(document).on 'templateinit', (event) ->
       r = @colorPicker.spectrum('get').toRgb()['r']
       g = @colorPicker.spectrum('get').toRgb()['g']
       b = @colorPicker.spectrum('get').toRgb()['b']
+      @device.rest.changeHueSatValTo(
+        {hue: @colorPicker.spectrum('get').toHsv()['h'] / 360 * 100,
+        sat: @colorPicker.spectrum('get').toHsv()['s'] * 100},
+        global: no
+      )
       return @device.rest.setRGB(
           {r: r, g: g, b: b}, global: no
         ).then(ajaxShowToast, ajaxAlertFail)
-#      return @device.rest.changeHueSatTo(
-#          {hue: @colorPicker.spectrum('get').toHsv()['h'] / 360 * 100,
-#          sat: @colorPicker.spectrum('get').toHsv()['s'] * 100},
-#          global: no
-#          )
 
 
 ##############################################################
@@ -202,14 +202,14 @@ $(document).on 'templateinit', (event) ->
       r = @colorPicker.spectrum('get').toRgb()['r']
       g = @colorPicker.spectrum('get').toRgb()['g']
       b = @colorPicker.spectrum('get').toRgb()['b']
+      @device.rest.changeHueSatValTo(
+        {hue: @colorPicker.spectrum('get').toHsv()['h'] / 360 * 100,
+        sat: @colorPicker.spectrum('get').toHsv()['s'] * 100},
+        global: no
+      )
       return @device.rest.setRGB(
           {r: r, g: g, b: b}, global: no
         ).then(ajaxShowToast, ajaxAlertFail)
-#      return @device.rest.changeHueSatTo(
-#          {hue: @colorPicker.spectrum('get').toHsv()['h'] / 360 * 100,
-#          sat: @colorPicker.spectrum('get').toHsv()['s'] * 100},
-#          global: no
-#          )
 
 
 

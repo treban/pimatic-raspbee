@@ -41,7 +41,8 @@ module.exports = (env) ->
         RaspBeeRGBCT,
         RaspBeeDimmerGroup,
         RaspBeeRGBCTGroup,
-        RaspBeeGroupScenes
+        RaspBeeGroupScenes,
+        RaspBeeRGBDummy
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -132,7 +133,6 @@ module.exports = (env) ->
         env.logger.debug(devices)
         for i of devices
           dev=devices[i]
-          @groupid=i
           @lclass = switch
             when dev.type == "LightGroup" then "RaspBeeRGBCTGroup"
           config = {
@@ -328,6 +328,7 @@ module.exports = (env) ->
         }
       if "temperature" in @config.supports
         @_temperature = lastState?.temperature?.value
+        @_tempoffset = @config.temperatureOffset
         @attributes.temperature = {
           description: "the measured temperature"
           type: "number"
@@ -542,9 +543,10 @@ module.exports = (env) ->
       @emit 'battery', value
 
     _setTemperature: (value) ->
-      if @_temperature is value then return
-      @_temperature = value
-      @emit 'temperature', value
+      newt=if @_tempoffset? then @_tempoffset+value else value
+      if @_temperature is newt then return
+      @_temperature = newt
+      @emit 'temperature', newt
 
     _setHumidity: (value) ->
       if @_humidity is value then return
@@ -945,6 +947,7 @@ module.exports = (env) ->
       @_sendState({on: state}).then( () =>
         return Promise.resolve()
       ).catch( (error) =>
+        env.logger.error error
         return Promise.reject(error)
       )
 
@@ -1161,6 +1164,13 @@ module.exports = (env) ->
           time:
             type: t.number
             optional: yes
+      @actions.changeHueSatValTo =
+        description: 'set light color values without transmit'
+        params:
+          hue:
+            type: t.number
+          sat:
+            type: t.number
       @actions.setRGB =
         description: 'set light color'
         params:
@@ -1224,8 +1234,8 @@ module.exports = (env) ->
 #        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
-        return Promise.resolve()
         @_setHue hue
+        return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)
       )
@@ -1242,6 +1252,10 @@ module.exports = (env) ->
       ).catch( (error) =>
         return Promise.reject(error)
       )
+    changeHueSatValTo: (hue, sat) ->
+      @_setHue hue
+      @_setSat sat
+      return Promise.resolve()
 
     changeHueSatTo: (hue, sat, time) ->
       param = {
@@ -1300,6 +1314,13 @@ module.exports = (env) ->
           time:
             type: t.number
             optional: yes
+      @actions.changeHueSatValTo =
+        description: 'set light color values without transmit'
+        params:
+          hue:
+            type: t.number
+          sat:
+            type: t.number
       @actions.setRGB =
         description: 'set light color'
         params:
@@ -1385,8 +1406,8 @@ module.exports = (env) ->
 #        transitiontime: time or @_transtime
       }
       @_sendState(param).then( () =>
-        return Promise.resolve()
         @_setHue hue
+        return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)
       )
@@ -1420,6 +1441,11 @@ module.exports = (env) ->
       ).catch( (error) =>
         return Promise.reject(error)
       )
+
+    changeHueSatValTo: (hue, sat) ->
+      @_setHue hue
+      @_setSat sat
+      return Promise.resolve()
 
     setRGB: (r,g,b,time) ->
       xy=Color.rgb_to_xyY(r,g,b)
@@ -1509,6 +1535,19 @@ module.exports = (env) ->
       else
         env.logger.error ("gateway not online")
         return Promise.reject(Error("gateway not online"))
+
+  class RaspBeeRGBDummy extends RaspBeeRGBCT
+
+    template: 'raspbee-group-rgbct'
+
+    constructor: (@config,lastState) ->
+      super(@config,lastState)
+
+    parseEvent: (data) ->
+      return
+
+    _sendState: (param) ->
+      return Promise.resolve()
 
   class RaspBeeGroupScenes extends env.devices.Device
 

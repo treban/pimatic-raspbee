@@ -217,6 +217,11 @@ module.exports = {
         type: "integer"
         default: 5
   },
+  RaspBeeRGBDummy: {
+    title: "Raspbee Color Temperature Light Dummy Device"
+    type: "object"
+    properties: {}
+  },
   RaspBeeDimmerGroup: {
     title: "Raspbee Dimmer Light Device"
     type: "object"
@@ -282,6 +287,10 @@ module.exports = {
         description: "temperature acronym"
         type: "string"
         default: "T"
+      temperatureOffset:
+        description: "temperature offset"
+        type: "integer"
+        default: 0
       humidityAcronym:
         description: "humidity acronym"
         type: "string"

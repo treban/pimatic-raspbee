@@ -91,7 +91,7 @@ module.exports = (env) ->
       Request("http://"+@host+":"+@port+"/api/"+@apikey+"/config", {timeout: 15000}).then( (res) =>
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
-        return Promise.reject("Bad request")
+        return Promise.reject(Error("Bad request"))
       )
 
     getSensor: (id) =>
@@ -101,9 +101,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device with ID: "+id+ " not found")
+          return Promise.reject(Error("Device with ID: "+id+ " not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     getLight: (id) =>
@@ -113,9 +113,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Light with ID: "+id+ " not found")
+          return Promise.reject(Error("Light with ID: "+id+ " not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     getGroup: (id) =>
@@ -125,9 +125,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Group with ID: "+id+ " not found")
+          return Promise.reject(Error("Group with ID: "+id+ " not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     getScenes: (id) =>
@@ -135,9 +135,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Scene with ID: "+id+ " not found")
+          return Promise.reject(Error("Scene with ID: "+id+ " not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     setLightState: (id,param) =>
@@ -150,9 +150,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Light with ID: "+id+ " not found")
+          return Promise.reject(Error("Light with ID: "+id+ " not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     setGroupState: (id,param) =>
@@ -165,9 +165,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject(Error("Device not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     setSensorConfig: (id,param) =>
@@ -180,9 +180,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject(Error("Device not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     setLightConfig: (id,param) =>
@@ -195,9 +195,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject(Error("Device not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     setGroupScene: (id, scene_id) =>
@@ -209,9 +209,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject(Error("Device not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     discoverLights: () =>
@@ -223,9 +223,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Error")
+          return Promise.reject(Error("Error"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     discoverSensors: () =>
@@ -237,9 +237,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Error")
+          return Promise.reject(Error("Error"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     checkSensors: () =>
@@ -251,9 +251,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Error")
+          return Promise.reject(Error("Error"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     checkLights: () =>
@@ -265,9 +265,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Error")
+          return Promise.reject(Error("Error"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     createBackup: (path) =>
@@ -292,9 +292,9 @@ module.exports = (env) ->
       ).catch ( (err) =>
         env.logger.error(err)
         if (err.statusCode is 404)
-          return Promise.reject("Error")
+          return Promise.reject(Error("Error"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     setConfig: (param) =>
@@ -307,9 +307,9 @@ module.exports = (env) ->
         return Promise.resolve(JSON.parse(res))
       ).catch ( (err) =>
         if (err.statusCode is 404)
-          return Promise.reject("Device not found")
+          return Promise.reject(Error("Device not found"))
         else
-          return Promise.reject("Bad request")
+          return Promise.reject(Error("Bad request"))
       )
 
     @generateAPIKey: (host,port) ->
@@ -324,7 +324,7 @@ module.exports = (env) ->
       ).catch ( (err) =>
         env.logger.error("apikey could not be generated")
         if (err.statusCode is 403)
-          return Promise.reject("unlock gateway!")
+          return Promise.reject(Error("unlock gateway!"))
         else
-          return Promise.reject("bad request!")
+          return Promise.reject(Error("bad request!"))
       )

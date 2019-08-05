@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.3]
+### added
+* temperature offset for MultiSensor device
+* new RaspBeeRGBDummy device
+
+### Changed
+* color of the dimmer sliders inverted
+
+### Fixed
+* hue variable not updated for RGB devices
+
 ## [0.1.2]
 ### added
 * #17 RuleManager: hue and sat action provider

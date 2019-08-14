@@ -24,13 +24,11 @@ module.exports = (env) ->
       @framework=framework
 
     parseAction: (input, context) =>
-      # The result the function will return:
-      matchCount = 0
       matchingScene = null
+      matchingDevice = null
       scenes = []
-      @deviceScenes = {}
-      end = () => matchCount++
-      onSceneMatch = (m, {scene}) =>
+      onSceneMatch = (m, {device,scene}) =>
+        matchingDevice = device
         matchingScene = scene
 
       RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
@@ -44,7 +42,6 @@ module.exports = (env) ->
       for id, d of RaspBeeDevices
         for s in d.config.buttons
           scenes.push [{device: d, scene: s.name}, s.name]
-          @deviceScenes[s.name] = d
 
       m = M(input, context)
         .match('activate group scene ')
@@ -56,11 +53,12 @@ module.exports = (env) ->
       match = m.getFullMatch()
       if match?
         assert matchingScene?
+        assert matchingDevice?
         assert typeof match is "string"
         return {
           token: match
           nextInput: input.substring(match.length)
-          actionHandler: new SceneActionHandler(@deviceScenes[matchingScene], matchingScene)
+          actionHandler: new SceneActionHandler(matchingDevice, matchingScene)
         }
       else
         return null
@@ -69,7 +67,7 @@ module.exports = (env) ->
 
     constructor: (device, scene) ->
       super()
-      @device=devices
+      @device=device
       @scene=scene
       assert @device?
       assert @scene? and typeof @scene is "string"

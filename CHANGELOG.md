@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.4]
+### Fixed
+* #35 Fix rule for group scenes
+
 ## [0.1.3]
 ### added
 * temperature offset for MultiSensor device

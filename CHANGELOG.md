@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.5]
+### Fixed
+* #36 switch on the light when parameters are modified.
+
 ## [0.1.4]
 ### Fixed
 * #35 Fix rule for group scenes

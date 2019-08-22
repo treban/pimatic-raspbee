@@ -1125,6 +1125,7 @@ module.exports = (env) ->
 
     setCT: (color,time) =>
       param = {
+        on: true,
         ct: Math.round(@ctmin + color / 100 * (@ctmax-@ctmin)),
         transitiontime: time or @_transtime
       }
@@ -1229,6 +1230,7 @@ module.exports = (env) ->
 
     changeHueTo: (hue, time) ->
       param = {
+        on: true,
         hue: parseInt(hue/100*65535),
 # not working with transtime
 #        transitiontime: time or @_transtime
@@ -1242,6 +1244,7 @@ module.exports = (env) ->
 
     changeSatTo: (sat, time) ->
       param = {
+        on: true,
         sat: parseInt (sat/100*254),
 # not working with transtime
 #        transitiontime: time or @_transtime
@@ -1259,6 +1262,7 @@ module.exports = (env) ->
 
     changeHueSatTo: (hue, sat, time) ->
       param = {
+        on: true,
         sat: (sat/100*254),
         hue: (hue/100*65535),
         transitiontime: time or @_transtime
@@ -1277,6 +1281,7 @@ module.exports = (env) ->
     setRGB: (r,g,b,time) ->
       xy=Color.rgb_to_xyY(r,g,b)
       param = {
+        on: true,
         xy: xy,
         transitiontime: time or @_transtime
       }
@@ -1369,6 +1374,7 @@ module.exports = (env) ->
       kalvin=Math.round(2000 + color / 100 * (6500-2000))
       xy=Color.kelvin_to_xy(kalvin)
       param = {
+        on: true,
         xy: xy,
         transitiontime: time or @_transtime
       }
@@ -1401,6 +1407,7 @@ module.exports = (env) ->
 
     changeHueTo: (hue, time) ->
       param = {
+        on: true,
         hue: parseInt(hue/100*65535),
 # not working with transtime
 #        transitiontime: time or @_transtime
@@ -1414,6 +1421,7 @@ module.exports = (env) ->
 
     changeSatTo: (sat, time) ->
       param = {
+        on: true,
         sat: parseInt (sat/100*254),
 # not working with transtime
 #        transitiontime: time or @_transtime
@@ -1427,6 +1435,7 @@ module.exports = (env) ->
 
     changeHueSatTo: (hue, sat, time) ->
       param = {
+        on: true,
         sat: (sat/100*254),
         hue: (hue/100*65535),
         transitiontime: time or @_transtime
@@ -1450,6 +1459,7 @@ module.exports = (env) ->
     setRGB: (r,g,b,time) ->
       xy=Color.rgb_to_xyY(r,g,b)
       param = {
+        on: true,
         xy: xy,
         transitiontime: time or @_transtime
       }

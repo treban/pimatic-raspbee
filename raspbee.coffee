@@ -294,6 +294,8 @@ module.exports = (env) ->
       @attributes = {}
       @actions = {}
       @_resetTimeout = null
+      @_rateLimitTimeout = null
+      @_rateLimited = false
       @CmdMap = []
 
       if @config.supportsBattery
@@ -471,7 +473,12 @@ module.exports = (env) ->
 
       super()
       myRaspBeePlugin.on "event", (data) =>
-        if data.id in @sensorIDs and data.resource is "sensors" and data.event is "changed"
+        if data.id in @sensorIDs and data.resource is "sensors" and data.event is "changed" and !@_rateLimited
+          if @config.rateLimit > 0
+            @_rateLimited = true
+            @_rateLimitTimeout = setTimeout ( =>
+              @_rateLimited = false
+            ), @config.rateLimit
           @_updateAttributes data
 
       myRaspBeePlugin.on "config", () =>
@@ -535,6 +542,7 @@ module.exports = (env) ->
 
     destroy: ->
       clearTimeout(@_resetTimeout) if @_resetTimeout?
+      clearTimeout(@_rateLimitTimeout) if @_rateLimitTimeout?
       super()
 
     _setBattery: (value) ->

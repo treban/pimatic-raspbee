@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.7]
+### Fixed
+* #47 Hotfix for new deconz version 2.5.78
+
 ## [0.1.6]
 ### Fixed
 * #47 Hotfix for new deconz version 2.5.78

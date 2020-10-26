@@ -42,7 +42,8 @@ module.exports = (env) ->
         RaspBeeDimmerGroup,
         RaspBeeRGBCTGroup,
         RaspBeeGroupScenes,
-        RaspBeeRGBDummy
+        RaspBeeRGBDummy,
+        RaspBeeCover
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -58,6 +59,7 @@ module.exports = (env) ->
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeDimmerActionProvider(@framework))
       @framework.ruleManager.addPredicateProvider(new RaspBeePredicate.RaspBeePredicateProvider(@framework, @config))
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeHueSatActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeCoverActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -111,14 +113,27 @@ module.exports = (env) ->
             when dev.type == "Color temperature light" then "RaspBeeCT"
             when dev.type == "Color light" then "RaspBeeRGB"
             when dev.type == "Extended color light" then "RaspBeeRGBCT"
-          config = {
-            class: @lclass,
-            name: dev.name,
-            id: "raspbee_l#{dev.etag}#{i}",
-            deviceID: i
-          }
-          if not @inConfig(i, @lclass)
-            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+            when dev.type == "Window covering device" then "RaspBeeCover"
+            when dev.type == "Window covering controller" then "RaspBeeCover"
+          if @lclass == "RaspbeeCover"
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_c#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Cover: #{config.name} - #{dev.modelid}", config )
+          else
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_l#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+
       )
       @Connector.getSensor().then((devices)=>
         env.logger.debug("sensor list")
@@ -1613,6 +1628,116 @@ module.exports = (env) ->
             return Promise.resolve()
           return Promise.reject(Error("connector not ready"))
       return Promise.reject(Error("Unknown scene "+scene_name))
+
+  class RaspBeeCover extends env.devices.DimmerActuator
+
+    _lastdimlevel: null
+    template: 'raspbee-dimmer'
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_presence = lastState?.presence?.value or false
+      @_battery= lastState?.battdownery?.value or 0
+      @_dimlevel = lastState?.dimlevel?.value or 0
+      @_lastdimlevel = lastState?.lastdimlevel?.value or 100
+      @_state = lastState?.state?.value or off
+      @_transtime = @config.transtime
+
+      @addAttribute  'presence',
+        description: "online status",
+        type: t.boolean
+
+      super()
+      myRaspBeePlugin.on "event", (data) =>
+        if data.resource is "lights" and data.id is @deviceID and data.event is "changed"
+          @parseEvent(data)
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
+          @parseEvent(res)
+        ).catch( (error) =>
+          env.logger.error (error)
+        )
+
+    parseEvent: (data) ->
+      @_setPresence(data.state.reachable) if data.state?.reachable?
+      if data.state.bri?
+        val = Math.ceil(data.state.bri / 255 * 100)
+        if @_state
+          @_setDimlevel(val)
+        if val > 0
+          @_lastdimlevel = val
+      if (data.state.on?)
+        if data.state.on
+          @_setDimlevel(@_lastdimlevel)
+        else
+          if @_dimlevel > 0
+            @_lastdimlevel = @_dimlevel
+          @_setDimlevel(0)
+
+    destroy: ->
+      super()
+
+    getTemplateName: -> "raspbee-dimmer"
+
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
+
+    getPresence: -> Promise.resolve(@_presence)
+
+    turnOn: ->
+      @changeDimlevelTo(@_lastdimlevel)
+
+    turnOff: ->
+      @changeDimlevelTo(0)
+
+    changeDimlevelTo: (level, time) ->
+      param = {
+        on: level != 0,
+        transitiontime: time or @_transtime
+      }
+      if (level > 0)
+        param.bri=Math.round(level*(2.54))
+      @_sendState(param).then( () =>
+        unless @_dimlevel is 0
+          @_lastdimlevel = @_dimlevel
+        @_setDimlevel(level)
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    _sendState: (param) ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
+          env.logger.debug ("New value send to device #{@name}")
+          env.logger.debug (param)
+          if res[0].success?
+            return Promise.resolve()
+          else
+            if (res[0].error.type is 3 )
+              @_setPresence(false)
+              return Promise.reject(Error("device #{@name} not reachable"))
+            else if (res[0].error.type is 201 )
+              return Promise.reject(Error("device #{@name} is not modifiable. Device is set to off"))
+            else Promise.reject(Error("general error"))
+        ).catch( (error) =>
+          return Promise.reject(error)
+        )
+      else
+        env.logger.error ("gateway not online")
+        return Promise.reject(Error("gateway not online"))
+
+
 
 ##############################################################
 # Raspbee system device

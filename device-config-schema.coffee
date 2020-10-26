@@ -339,5 +339,17 @@ module.exports = {
               type: "string"
             name:
               type: "string"
+  },
+  RaspBeeCover: {
+    title: "Raspbee Cover Device"
+    type: "object"
+    properties:
+      deviceID:
+        description: "Raspbee address"
+        type: "integer"
+      transtime:
+        description: "Raspbee transtime"
+        type: "integer"
+        default: 5
   }
 }

@@ -477,10 +477,90 @@ module.exports = (env) ->
     hasRestoreAction: -> yes
     executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))
 
+  class RaspbeeCoverActionProvider extends env.actions.ActionProvider
+
+    constructor: (framework) ->
+      super()
+      @framework=framework
+
+    parseAction: (input, context) =>
+      retVar = null
+
+      RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
+        (device) => _.includes [
+          'RaspBeeCover'
+        ], device.config.class
+      ).value()
+
+      if RaspBeeDevices.length is 0 then return
+
+      device = null
+      valueTokens = null
+      match = M(input, context)
+        .match("set raspbee ")
+        .matchDevice(RaspBeeDevices, (next, d) =>
+          if device? and device.id isnt d.id
+            context?.addError(""""#{input.trim()}" is ambiguous (device).""")
+            return
+          device = d
+        )
+        .match(" to ")
+        .matchNumericExpression( (next, ts) => valueTokens = ts )
+        .match('%', optional: yes)
+
+      transitionMs = null
+      match = matchTransitionExpression(match, ( (m, {time, unit, timeMs}) =>
+        transitionMs = timeMs/100
+      ), yes)
+
+      unless match? and valueTokens? then return null
+
+      if valueTokens.length is 1 and not isNaN(valueTokens[0])
+        unless 0.0 <= parseFloat(valueTokens[0]) <= 100.0
+          context?.addError("Set must be between 0% and 100%")
+          return null
+
+      return {
+        token: match.getFullMatch()
+        nextInput: input.substring(match.getFullMatch().length)
+        actionHandler: new RaspbeeCoverActionHandler(@framework, device, valueTokens, transitionMs)
+      }
+
+  class RaspbeeCoverActionHandler extends env.actions.ActionHandler
+
+    constructor: (framework, device, valueTokens, @transitionTime=null) ->
+      super()
+      @framework=framework
+      @device=device
+      @valueTokens=valueTokens
+      assert @device?
+      assert @valueTokens?
+
+    setup: ->
+      @dependOnDevice(@device)
+      super()
+
+    _doExecuteAction: (simulate, value, transtime) =>
+      return (
+        if simulate
+          __("would set cover %s to %s%%", @device.name, value)
+        else
+          @device.changeDimlevelTo(value, @transitionTime).then( => __("set cover %s to %s%%", @device.name, value) )
+      )
+
+    executeAction: (simulate) =>
+      return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
+        return @_doExecuteAction(simulate, value )
+      )
+
+    hasRestoreAction: -> yes
+    executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))
+
   return exports = {
     RaspBeeSceneActionProvider
     RaspBeeRGBActionProvider
     RaspBeeTempActionProvider
     RaspbeeDimmerActionProvider
     RaspBeeHueSatActionProvider
+    RaspbeeCoverActionProvider
   }

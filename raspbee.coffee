@@ -1669,7 +1669,7 @@ module.exports = (env) ->
     parseEvent: (data) ->
       @_setPresence(data.state.reachable) if data.state?.reachable?
       if data.state.bri?
-        val = Math.ceil(data.state.bri / 255 * 100)
+        val = Math.ceil((data.state.bri / 255) * 100)
         if @_state
           @_setDimlevel(val)
         if val > 0
@@ -1702,11 +1702,10 @@ module.exports = (env) ->
 
     changeDimlevelTo: (level, time) ->
       param = {
-        on: level != 0,
-        transitiontime: time or @_transtime
+        on: level != 0
       }
       if (level > 0)
-        param.bri=Math.round(level*(2.54))
+        param["bri"] = 254 - Math.round((level * (2.54)) # Math.round(level*(2.54))
       @_sendState(param).then( () =>
         unless @_dimlevel is 0
           @_lastdimlevel = @_dimlevel

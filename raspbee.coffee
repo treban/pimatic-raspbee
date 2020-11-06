@@ -1668,6 +1668,7 @@ module.exports = (env) ->
 
     parseEvent: (data) ->
       @_setPresence(data.state.reachable) if data.state?.reachable?
+      env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.bri?
         val = Math.ceil((data.state.bri / 255) * 100)
         if @_state
@@ -1699,6 +1700,16 @@ module.exports = (env) ->
 
     turnOff: ->
       @changeDimlevelTo(0)
+
+    stop: ->
+      param = {
+        bri_inc: 0
+      }
+      @_sendState(param).then( () =>
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
 
     changeDimlevelTo: (level, time) ->
       param = {

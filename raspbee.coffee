@@ -1669,20 +1669,21 @@ module.exports = (env) ->
     parseEvent: (data) ->
       @_setPresence(data.state.reachable) if data.state?.reachable?
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
-      if data.state.bri?
-        val = Math.ceil((data.state.bri / 255) * 100)
+      if data.state.lift?
+        val = data.state.lift
+        #val = Math.ceil((data.state.bri / 255) * 100)
         #if @_state
         @_setDimlevel(val)
         #if val > 0
         #  @_lastdimlevel = val
-      if (data.state.on?)
-        if data.state.on
+      if (data.state.open?)
+        if data.state.lift is 100
           @_setDimlevel(100)
           #@_setDimlevel(@_lastdimlevel)
-        else
+          #else
           #if @_dimlevel > 0
           #  @_lastdimlevel = @_dimlevel
-          @_setDimlevel(0)
+          #@_setDimlevel(0)
 
     destroy: ->
       super()
@@ -1721,8 +1722,8 @@ module.exports = (env) ->
         param["bri"] = Math.round(level * (2.54)) # Math.round(level*(2.54))
         # param["bri"] = 254 - Math.round(level * (2.54)) # Math.round(level*(2.54))
       @_sendState(param).then( () =>
-        unless @_dimlevel is 0
-          @_lastdimlevel = @_dimlevel
+        #unless @_dimlevel is 0
+        #  @_lastdimlevel = @_dimlevel
         @_setDimlevel(level)
         return Promise.resolve()
       ).catch( (error) =>

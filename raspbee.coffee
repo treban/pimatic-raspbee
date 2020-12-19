@@ -1671,10 +1671,10 @@ module.exports = (env) ->
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.bri?
         val = Math.ceil((data.state.bri / 255) * 100)
-        if @_state
-          @_setDimlevel(val)
-          #if val > 0
-          #  @_lastdimlevel = val
+        #if @_state
+        @_setDimlevel(val)
+        #if val > 0
+        #  @_lastdimlevel = val
       if (data.state.on?)
         if data.state.on
           @_setDimlevel(100)

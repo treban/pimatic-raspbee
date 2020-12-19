@@ -1696,7 +1696,8 @@ module.exports = (env) ->
     getPresence: -> Promise.resolve(@_presence)
 
     turnOn: ->
-      @changeDimlevelTo(@_lastdimlevel)
+      @changeDimlevelTo(100)
+      # @changeDimlevelTo(@_lastdimlevel)
 
     turnOff: ->
       @changeDimlevelTo(0)

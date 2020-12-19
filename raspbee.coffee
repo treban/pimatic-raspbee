@@ -1673,14 +1673,15 @@ module.exports = (env) ->
         val = Math.ceil((data.state.bri / 255) * 100)
         if @_state
           @_setDimlevel(val)
-        if val > 0
-          @_lastdimlevel = val
+          #if val > 0
+          #  @_lastdimlevel = val
       if (data.state.on?)
         if data.state.on
-          @_setDimlevel(@_lastdimlevel)
+          @_setDimlevel(100)
+          #@_setDimlevel(@_lastdimlevel)
         else
-          if @_dimlevel > 0
-            @_lastdimlevel = @_dimlevel
+          #if @_dimlevel > 0
+          #  @_lastdimlevel = @_dimlevel
           @_setDimlevel(0)
 
     destroy: ->

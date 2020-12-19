@@ -496,6 +496,8 @@ module.exports = (env) ->
 
       device = null
       valueTokens = null
+      stop = null
+
       match = M(input, context)
         .match("set raspbee ")
         .matchDevice(RaspBeeDevices, (next, d) =>
@@ -504,16 +506,27 @@ module.exports = (env) ->
             return
           device = d
         )
-        .match(" to ")
-        .matchNumericExpression( (next, ts) => valueTokens = ts )
-        .match('%', optional: yes)
+        .or([
+          ((m) =>
+            m.match(" to ")
+              .matchNumericExpression( (next, ts) =>
+                valueTokens = ts
+              )
+              .match('%', optional: yes)          
+          ),
+          ((m) =>
+            m.match(" stop", (m)=>
+              stop = true
+            )
+          )
+        ])
 
-      transitionMs = null
-      match = matchTransitionExpression(match, ( (m, {time, unit, timeMs}) =>
-        transitionMs = timeMs/100
-      ), yes)
+      #transitionMs = null
+      #match = matchTransitionExpression(match, ( (m, {time, unit, timeMs}) =>
+      #  transitionMs = timeMs/100
+      #), yes)
 
-      unless match? and valueTokens? then return null
+      if not match.getFullMatch()? and not valueTokens? and not stop? then return null
 
       if valueTokens.length is 1 and not isNaN(valueTokens[0])
         unless 0.0 <= parseFloat(valueTokens[0]) <= 100.0
@@ -522,19 +535,20 @@ module.exports = (env) ->
 
       return {
         token: match.getFullMatch()
-        nextInput: input.substring(match.getFullMatch().length)
-        actionHandler: new RaspbeeCoverActionHandler(@framework, device, valueTokens, transitionMs)
+        nextInput: input.substring((match.getFullMatch()).length)
+        actionHandler: new RaspbeeCoverActionHandler(@framework, device, stop, valueTokens, null) #transitionMs)
       }
 
   class RaspbeeCoverActionHandler extends env.actions.ActionHandler
 
-    constructor: (framework, device, valueTokens, @transitionTime=null) ->
+    constructor: (framework, device, stop, valueTokens, @transitionTime=null) ->
       super()
       @framework=framework
       @device=device
+      @stop=stop
       @valueTokens=valueTokens
       assert @device?
-      assert @valueTokens?
+      assert @valueTokens? if valueTokens?
 
     setup: ->
       @dependOnDevice(@device)
@@ -545,13 +559,19 @@ module.exports = (env) ->
         if simulate
           __("would set cover %s to %s%%", @device.name, value)
         else
-          @device.changeDimlevelTo(value, @transitionTime).then( => __("set cover %s to %s%%", @device.name, value) )
+          if @stop
+            @device.stop().then( => __("stop cover %s", @device.name) )
+          else
+            @device.changeDimlevelTo(value, @transitionTime).then( => __("set cover %s to %s%%", @device.name, value) )
       )
 
     executeAction: (simulate) =>
-      return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
-        return @_doExecuteAction(simulate, value )
-      )
+      if @valueTokens?
+        return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
+          return @_doExecuteAction(simulate, value )
+        )
+      else
+        return @_doExecuteAction(simulate)
 
     hasRestoreAction: -> yes
     executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))

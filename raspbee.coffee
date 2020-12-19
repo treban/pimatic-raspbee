@@ -1716,7 +1716,8 @@ module.exports = (env) ->
         on: level != 0
       }
       if (level > 0)
-        param["bri"] = 254 - Math.round(level * (2.54)) # Math.round(level*(2.54))
+        param["bri"] = Math.round(level * (2.54)) # Math.round(level*(2.54))
+        # param["bri"] = 254 - Math.round(level * (2.54)) # Math.round(level*(2.54))
       @_sendState(param).then( () =>
         unless @_dimlevel is 0
           @_lastdimlevel = @_dimlevel

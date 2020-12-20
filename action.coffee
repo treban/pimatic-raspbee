@@ -409,7 +409,8 @@ module.exports = (env) ->
           'RaspBeeRGB',
           'RaspBeeDimmerGroup',
           'RaspBeeRGBCT',
-          'RaspBeeRGBCTGroup'
+          'RaspBeeRGBCTGroup',
+          'RaspBeeCover'
         ], device.config.class
       ).value()
 

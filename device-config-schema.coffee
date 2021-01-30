@@ -289,7 +289,7 @@ module.exports = {
         default: "T"
       temperatureOffset:
         description: "temperature offset"
-        type: "integer"
+        type: "number"
         default: 0
       humidityAcronym:
         description: "humidity acronym"

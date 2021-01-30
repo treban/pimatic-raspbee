@@ -15,6 +15,36 @@ $(document).on 'templateinit', (event) ->
         .done(ajaxShowToast)
         .fail(ajaxAlertFail)
 
+  class RaspBeeSwitchItem extends pimatic.SwitchItem
+
+    constructor: (templData, @device) ->
+      super(templData, @device)
+      @getAttribute('presence').value.subscribe( =>
+        @updateClass()
+      )
+
+    getItemTemplate: => 'raspbee-switch'
+
+    afterRender: (elements) ->
+      super(elements)
+      @presenceEle = $(elements).find('.attr-presence')
+      @updateClass()
+
+    updateClass: ->
+      value = @getAttribute('presence').value()
+      if @presenceEle?
+        switch value
+          when true
+            @presenceEle.addClass('value-present')
+            @presenceEle.removeClass('value-absent')
+          when false
+            @presenceEle.removeClass('value-present')
+            @presenceEle.addClass('value-absent')
+          else
+            @presenceEle.removeClass('value-absent')
+            @presenceEle.removeClass('value-present')
+        return
+
 
   class RaspBeeDimmerItem extends pimatic.SwitchItem
 
@@ -284,6 +314,7 @@ $(document).on 'templateinit', (event) ->
             @presenceEle.removeClass('value-present')
       return
 
+  pimatic.templateClasses['raspbee-switch'] = RaspBeeSwitchItem
   pimatic.templateClasses['raspbee-dimmer'] = RaspBeeDimmerItem
   pimatic.templateClasses['raspbee-ct'] = RaspBeeCTItem
   pimatic.templateClasses['raspbee-rgb'] = RaspBeeRGBItem

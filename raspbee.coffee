@@ -382,7 +382,7 @@ module.exports = (env) ->
           unit: 'W'
           acronym: @config.powerAcronym
         }
-      if "consumtion" in @config.supports
+      if "consumption" in @config.supports
         @_consumtion = lastState?.consumtion?.value
         @attributes.consumtion = {
           description: "the measured consumtion"
@@ -500,7 +500,7 @@ module.exports = (env) ->
       @_setAlarm(data.state.alarm) if data.state?.alarm?
       @_setBattery(data.config.battery) if data.config?.battery?
       @_setCarbon(data.state.carbonmonoxide) if data.state?.carbonmonoxide?
-      @_setConsumtion(data.state.consumtion) if data.state?.consumtion?
+      @_setConsumtion(data.state.consumption) if data.state?.consumption?
       @_setCurrent(data.state.current) if data.state?.current?
       @_setDark(data.state.dark) if data.state?.dark?
       @_setDaylight(data.state.daylight) if data.state?.daylight?
@@ -917,6 +917,8 @@ module.exports = (env) ->
 
   class RaspBeeSwitch extends env.devices.PowerSwitch
 
+    template: "raspbee-switch"    
+
     constructor: (@config,lastState) ->
       @id = @config.id
       @name = @config.name
@@ -950,6 +952,8 @@ module.exports = (env) ->
 
     destroy: ->
       super()
+
+    getTemplateName: -> "raspbee-switch"
 
     _setPresence: (value) ->
       if @_presence is value then return

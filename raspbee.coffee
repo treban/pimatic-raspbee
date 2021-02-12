@@ -1582,12 +1582,19 @@ module.exports = (env) ->
 
     template: "buttons"
 
+    attributes:
+      button:
+        description: "The last pressed button"
+        type: t.string
+
     actions:
       buttonPressed:
         params:
           buttonId:
             type: t.integer
         description: "Press a button"
+
+    _lastPressedButton: null
 
     constructor: (@config,lastState) ->
       @id = @config.id
@@ -1598,6 +1605,12 @@ module.exports = (env) ->
         @getScenes()
       super(@config,lastState)
 
+      @_lastPressedButton = lastState?.button?.value
+      for button in @config.buttons
+        @_button = button if button.id is @_lastPressedButton
+    
+    getButton: -> Promise.resolve(@_lastPressedButton)
+    
     destroy: () ->
       super()
 

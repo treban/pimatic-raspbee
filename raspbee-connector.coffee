@@ -65,7 +65,7 @@ module.exports = (env) ->
             eventmessage.newdev = jdata.light if jdata.light?
             if jdata.attr?
               @emit 'update', (eventmessage)
-             else
+            else
               @emit 'event', (eventmessage)
           )
           @ws.on('error', (err) =>

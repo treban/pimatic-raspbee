@@ -64,9 +64,9 @@ module.exports = (env) ->
             eventmessage.newdev = jdata.sensor if jdata.sensor?
             eventmessage.newdev = jdata.light if jdata.light?
             if jdata.attr?
-               @emit 'update', (eventmessage)
+              @emit 'update', (eventmessage)
              else
-               @emit 'event', (eventmessage)
+              @emit 'event', (eventmessage)
           )
           @ws.on('error', (err) =>
             env.logger.error("websocket error")

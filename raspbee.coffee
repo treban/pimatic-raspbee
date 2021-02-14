@@ -42,7 +42,8 @@ module.exports = (env) ->
         RaspBeeDimmerGroup,
         RaspBeeRGBCTGroup,
         RaspBeeGroupScenes,
-        RaspBeeRGBDummy
+        RaspBeeRGBDummy,
+        RaspBeeCover
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -58,6 +59,7 @@ module.exports = (env) ->
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeDimmerActionProvider(@framework))
       @framework.ruleManager.addPredicateProvider(new RaspBeePredicate.RaspBeePredicateProvider(@framework, @config))
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeHueSatActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeCoverActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -111,14 +113,27 @@ module.exports = (env) ->
             when dev.type == "Color temperature light" then "RaspBeeCT"
             when dev.type == "Color light" then "RaspBeeRGB"
             when dev.type == "Extended color light" then "RaspBeeRGBCT"
-          config = {
-            class: @lclass,
-            name: dev.name,
-            id: "raspbee_l#{dev.etag}#{i}",
-            deviceID: i
-          }
-          if not @inConfig(i, @lclass)
-            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+            when dev.type == "Window covering device" then "RaspBeeCover"
+            when dev.type == "Window covering controller" then "RaspBeeCover"
+          if @lclass == "RaspbeeCover"
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_c#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Cover: #{config.name} - #{dev.modelid}", config )
+          else
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_l#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+
       )
       @Connector.getSensor().then((devices)=>
         env.logger.debug("sensor list")
@@ -367,7 +382,7 @@ module.exports = (env) ->
           unit: 'W'
           acronym: @config.powerAcronym
         }
-      if "consumtion" in @config.supports
+      if "consumption" in @config.supports
         @_consumtion = lastState?.consumtion?.value
         @attributes.consumtion = {
           description: "the measured consumtion"
@@ -485,7 +500,7 @@ module.exports = (env) ->
       @_setAlarm(data.state.alarm) if data.state?.alarm?
       @_setBattery(data.config.battery) if data.config?.battery?
       @_setCarbon(data.state.carbonmonoxide) if data.state?.carbonmonoxide?
-      @_setConsumtion(data.state.consumtion) if data.state?.consumtion?
+      @_setConsumtion(data.state.consumption) if data.state?.consumption?
       @_setCurrent(data.state.current) if data.state?.current?
       @_setDark(data.state.dark) if data.state?.dark?
       @_setDaylight(data.state.daylight) if data.state?.daylight?
@@ -902,6 +917,8 @@ module.exports = (env) ->
 
   class RaspBeeSwitch extends env.devices.PowerSwitch
 
+    template: "raspbee-switch"    
+
     constructor: (@config,lastState) ->
       @id = @config.id
       @name = @config.name
@@ -935,6 +952,8 @@ module.exports = (env) ->
 
     destroy: ->
       super()
+
+    getTemplateName: -> "raspbee-switch"
 
     _setPresence: (value) ->
       if @_presence is value then return
@@ -1563,12 +1582,19 @@ module.exports = (env) ->
 
     template: "buttons"
 
+    attributes:
+      button:
+        description: "The last pressed button"
+        type: t.string
+
     actions:
       buttonPressed:
         params:
           buttonId:
             type: t.integer
         description: "Press a button"
+
+    _lastPressedButton: null
 
     constructor: (@config,lastState) ->
       @id = @config.id
@@ -1579,6 +1605,12 @@ module.exports = (env) ->
         @getScenes()
       super(@config,lastState)
 
+      @_lastPressedButton = lastState?.button?.value
+      for button in @config.buttons
+        @_button = button if button.id is @_lastPressedButton
+    
+    getButton: -> Promise.resolve(@_lastPressedButton)
+    
     destroy: () ->
       super()
 
@@ -1613,6 +1645,130 @@ module.exports = (env) ->
             return Promise.resolve()
           return Promise.reject(Error("connector not ready"))
       return Promise.reject(Error("Unknown scene "+scene_name))
+
+  class RaspBeeCover extends env.devices.DimmerActuator
+
+    _lastdimlevel: null
+    template: 'raspbee-dimmer'
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_presence = lastState?.presence?.value or false
+      @_battery= lastState?.battdownery?.value or 0
+      @_dimlevel = lastState?.dimlevel?.value or 0
+      @_lastdimlevel = lastState?.lastdimlevel?.value or 100
+      @_state = lastState?.state?.value or off
+      @_transtime = @config.transtime
+
+      @addAttribute  'presence',
+        description: "online status",
+        type: t.boolean
+
+      super()
+      myRaspBeePlugin.on "event", (data) =>
+        if data.resource is "lights" and data.id is @deviceID and data.event is "changed"
+          @parseEvent(data)
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
+          @parseEvent(res)
+        ).catch( (error) =>
+          env.logger.error (error)
+        )
+
+    parseEvent: (data) ->
+      @_setPresence(data.state.reachable) if data.state?.reachable?
+      env.logger.debug "Received values: " + JSON.stringify(data,null,2)
+      if data.state.lift?
+        val = data.state.lift
+        #val = Math.ceil((data.state.bri / 255) * 100)
+        #if @_state
+        @_setDimlevel(val)
+        #if val > 0
+        #  @_lastdimlevel = val
+      if (data.state.open?)
+        if data.state.lift is 100
+          @_setDimlevel(100)
+          #@_setDimlevel(@_lastdimlevel)
+          #else
+          #if @_dimlevel > 0
+          #  @_lastdimlevel = @_dimlevel
+          #@_setDimlevel(0)
+
+    destroy: ->
+      super()
+
+    getTemplateName: -> "raspbee-dimmer"
+
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
+
+    getPresence: -> Promise.resolve(@_presence)
+
+    turnOn: ->
+      @changeDimlevelTo(100)
+      # @changeDimlevelTo(@_lastdimlevel)
+
+    turnOff: ->
+      @changeDimlevelTo(0)
+
+    stop: ->
+      param = {
+        bri_inc: 0
+      }
+      @_sendState(param).then( () =>
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    changeDimlevelTo: (level, time) ->
+      param = {
+        on: level != 0
+      }
+      if (level > 0)
+        param["bri"] = Math.round(level * (2.54)) # Math.round(level*(2.54))
+        # param["bri"] = 254 - Math.round(level * (2.54)) # Math.round(level*(2.54))
+      @_sendState(param).then( () =>
+        #unless @_dimlevel is 0
+        #  @_lastdimlevel = @_dimlevel
+        @_setDimlevel(level)
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    _sendState: (param) ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
+          env.logger.debug ("New value send to device #{@name}")
+          env.logger.debug (param)
+          if res[0].success?
+            return Promise.resolve()
+          else
+            if (res[0].error.type is 3 )
+              @_setPresence(false)
+              return Promise.reject(Error("device #{@name} not reachable"))
+            else if (res[0].error.type is 201 )
+              return Promise.reject(Error("device #{@name} is not modifiable. Device is set to off"))
+            else Promise.reject(Error("general error"))
+        ).catch( (error) =>
+          return Promise.reject(error)
+        )
+      else
+        env.logger.error ("gateway not online")
+        return Promise.reject(Error("gateway not online"))
+
+
 
 ##############################################################
 # Raspbee system device

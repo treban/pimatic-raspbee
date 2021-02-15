@@ -1686,7 +1686,13 @@ module.exports = (env) ->
     parseEvent: (data) ->
       @_setPresence(data.state.reachable) if data.state?.reachable?
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
-      if data.state.open?
+      if data.state.lift?
+        val = String data.state.lift
+        if val is "stop"
+          @_setDimlevel(50)
+        else
+          @_setDimlevel(Number val)
+      else if data.state.open?
         if data.state.open
           @_setDimlevel(0)
         else
@@ -1694,9 +1700,6 @@ module.exports = (env) ->
       else if data.state.stop?
         if data.state.stop
           @_setDimlevel(50)
-      else if data.state.lift?
-        val = data.state.lift
-        @_setDimlevel(val)
       else if data.state.tilt?
         env.logger.debug "Tilt action not supported"
 

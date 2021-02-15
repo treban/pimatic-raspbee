@@ -1688,6 +1688,14 @@ module.exports = (env) ->
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.lift?
         val = String data.state.lift
+        ###
+          Supported range is 0–100 or special value "stop"
+          lift is best understood as “percentage closed”. 
+          So for any lift value below 100 %, open is true.
+          0–99 — open is true
+          100 — open is false
+          "stop" — Stops the lift action
+        ###
         if val is "stop"
           @_setDimlevel(50)
         else

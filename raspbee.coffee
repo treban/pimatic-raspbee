@@ -1722,6 +1722,8 @@ module.exports = (env) ->
       @changeDimlevelTo(0)
 
     stop: ->
+      @changeDimlevelTo(50)
+      ###
       param = {
         bri_inc: 0
       }
@@ -1730,6 +1732,7 @@ module.exports = (env) ->
       ).catch( (error) =>
         return Promise.reject(error)
       )
+      ###
 
     changeDimlevelTo: (level, time) ->
       param = {

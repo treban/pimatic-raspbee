@@ -1745,10 +1745,11 @@ module.exports = (env) ->
 
     changeDimlevelTo: (level, time) ->
       param = {
-        on: level != 0
+        open: !(level == 100)
+        lift: level
       }
-      if (level > 0)
-        param["lift"] = Math.round(level * (2.54)) # Math.round(level*(2.54))
+      #if (level > 0)
+      #param["lift"] = Number level # Math.round(level * (2.54)) # Math.round(level*(2.54))
         # param["bri"] = 254 - Math.round(level * (2.54)) # Math.round(level*(2.54))
       @_sendState(param).then( () =>
         #unless @_dimlevel is 0

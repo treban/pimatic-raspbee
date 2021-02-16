@@ -1868,7 +1868,7 @@ module.exports = (env) ->
       env.logger.debug "changeLiftTo, @_sendState: " + JSON.stringify(param,null,2)
       #return Promise.resolve()
       @_sendState(param).then( () =>
-        @_setLift(lift) # set gui (slider) to target position
+        #@_setLift(lift) # set gui (slider) to target position
         #@moveTo(lift) # start position change to target position
         return Promise.resolve()
       ).catch( (error) =>

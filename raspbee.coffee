@@ -1738,17 +1738,17 @@ module.exports = (env) ->
           "stop" — Stops the lift action
         ###
         if val is "stop"
-          @_setAction('stop')
+          @stopCover()
         else
-          @_setLift(Number val)
+          @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
       else if data.state.open?
         if data.state.open
-          @_setLift(0)
+          @moveTo(0)
         else
-          @_setLift(100)
+          @moveTo(100)
       else if data.state.stop?
         if data.state.stop
-          @_setAction('stop')
+          @stopCover()
       else if data.state.tilt?
         env.logger.debug "Tilt action not supported"
 

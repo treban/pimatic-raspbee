@@ -351,6 +351,7 @@ module.exports = {
       rollerTime:
         description: "time in seconds for cover to move from closed to open"
         type: "number"
+        default: 20
       transtime:
         description: "Raspbee transtime"
         type: "integer"

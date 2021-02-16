@@ -1673,7 +1673,7 @@ module.exports = (env) ->
       @_status = lastState?.status?.value ? "closed"
       @_position = lastState?.position?.value ? 0 # is closed
       @_transtime = @config.transtime
-      @_rollerTime = @config.rollerTime
+      @_rollerTime = @config.rollerTime ? 20
       @config.xAttributeOptions.push
         name: "position"
         displaySparkline: false

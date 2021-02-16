@@ -314,6 +314,98 @@ $(document).on 'templateinit', (event) ->
             @presenceEle.removeClass('value-present')
       return
 
+  class RaspBeeCoverItem extends pimatic.DeviceItem # extends pimatic.SwitchItem
+
+    constructor: (templData, @device) ->
+      super(templData, @device)
+      @dsliderId = "dimmer-#{templData.deviceId}"
+      liftAttribute = @getAttribute('lift')
+      liftlevel = liftAttribute.value
+      @dsliderValue = ko.observable(if liftlevel()? then liftlevel() else 0)
+      liftAttribute.value.subscribe( (newLiftlevel) =>
+        @dsliderValue(newLiftlevel)
+        pimatic.try => @dsliderEle.slider('refresh')
+      )
+
+
+    getItemTemplate: => 'raspbee-cover'
+
+    afterRender: (elements) ->
+      super(elements)
+
+      @closeButton = $(elements).find('[name=closeButton]')
+      @stopButton = $(elements).find('[name=stopButton]')
+      @openButton = $(elements).find('[name=openButton]')
+      @updateActionButtons()
+
+      @getAttribute('action')?.value.subscribe( => @updateActionButtons() )
+
+      @getAttribute('presence').value.subscribe( =>
+        @updateClass()
+      )
+
+      @presenceEle = $(elements).find('.attr-presence')
+      @updateClass()
+      @dsliderEle = $(elements).find('#' + @dsliderId)
+      @dsliderEle.slider()
+      $(elements).find('.ui-slider').addClass('no-carousel-slide')
+      $('#index').on("slidestop", " #item-lists #"+@dsliderId , (event) ->
+          ddev = ko.dataFor(this)
+          ddev.onSliderStop()
+          return
+      )
+
+    modeClose: -> @changeActionTo "close"
+    modeStop: -> @changeActionTo "stop"
+    modeOpen: -> @changeActionTo "open"
+
+    updateActionButtons: =>
+      actionAttr = @getAttribute('action')?.value()
+      switch actionAttr
+        when 'close'
+          @closeButton.addClass('ui-btn-active')
+          @stopButton.removeClass('ui-btn-active')
+          @openButton.removeClass('ui-btn-active')
+        when 'stop'
+          @closeButton.removeClass('ui-btn-active')
+          @stopButton.addClass('ui-btn-active')
+          @openButton.removeClass('ui-btn-active')
+        when 'open'
+          @closeButton.removeClass('ui-btn-active')
+          @stopButton.removeClass('ui-btn-active')
+          @openButton.addClass('ui-btn-active')
+      return
+
+    onSliderStop: ->
+      @dsliderEle.slider('disable')
+      @device.rest.changeLiftTo( {lift: @dsliderValue()}, global: no).done(ajaxShowToast)
+      .fail( =>
+        pimatic.try => @dsliderEle.val(@getAttribute('lift').value()).slider('refresh')
+      ).always( =>
+        pimatic.try( => @dsliderEle.slider('enable'))
+      ).fail(ajaxAlertFail)
+
+    updateClass: ->
+      value = @getAttribute('presence').value()
+      if @presenceEle?
+        switch value
+          when true
+            @presenceEle.addClass('value-present')
+            @presenceEle.removeClass('value-absent')
+          when false
+            @presenceEle.removeClass('value-present')
+            @presenceEle.addClass('value-absent')
+          else
+            @presenceEle.removeClass('value-absent')
+            @presenceEle.removeClass('value-present')
+        return
+
+    changeActionTo: (_action) ->
+      @device.rest.changeActionTo({action: _action}, global: no)
+        .done(ajaxShowToast)
+        .fail(ajaxAlertFail)
+
+
   pimatic.templateClasses['raspbee-switch'] = RaspBeeSwitchItem
   pimatic.templateClasses['raspbee-dimmer'] = RaspBeeDimmerItem
   pimatic.templateClasses['raspbee-ct'] = RaspBeeCTItem
@@ -323,3 +415,4 @@ $(document).on 'templateinit', (event) ->
   pimatic.templateClasses['raspbee-system'] = RaspBeeSystemItem
   pimatic.templateClasses['raspbee-group-rgbct'] = RaspBeeGroupRGBCTItem
   pimatic.templateClasses['raspbee-multi'] = RaspBeeMultiItem
+  pimatic.templateClasses['raspbee-cover'] = RaspBeeCoverItem

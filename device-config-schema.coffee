@@ -343,10 +343,14 @@ module.exports = {
   RaspBeeCover: {
     title: "Raspbee Cover Device"
     type: "object"
+    extensions: ["xAttributeOptions"]
     properties:
       deviceID:
         description: "Raspbee address"
         type: "integer"
+      rollerTime:
+        description: "time in seconds for cover to move from closed to open"
+        type: "number"
       transtime:
         description: "Raspbee transtime"
         type: "integer"

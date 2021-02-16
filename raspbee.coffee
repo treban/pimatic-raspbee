@@ -1646,25 +1646,59 @@ module.exports = (env) ->
           return Promise.reject(Error("connector not ready"))
       return Promise.reject(Error("Unknown scene "+scene_name))
 
-  class RaspBeeCover extends env.devices.DimmerActuator
+  class RaspBeeCover extends env.devices.Device
 
-    _lastdimlevel: null
-    template: 'raspbee-dimmer'
+    actions:
+      changeLiftTo:
+        description: "Sets lift value"
+        params:
+          lift:
+            type: "number"
+      changeActionTo:
+        description: "Sets the action (close,stop,open)"
+        params:
+          action:
+            type: "string"
+
+    template: 'raspbee-cover'
 
     constructor: (@config,lastState) ->
       @id = @config.id
       @name = @config.name
       @deviceID = @config.deviceID
-      @_presence = lastState?.presence?.value or false
+      @_presence = false # lastState?.presence?.value or false
       @_battery= lastState?.battdownery?.value or 0
-      @_dimlevel = lastState?.dimlevel?.value or 0
-      @_lastdimlevel = lastState?.lastdimlevel?.value or 100
-      @_state = lastState?.state?.value or off
+      @_lift = lastState?.lift?.value ? 0 # is closed
+      @_action = lastState?.action?.value ? "stop"
+      @_status = lastState?.status?.value ? "closed"
+      @_position = lastState?.position?.value ? 0 # is closed
       @_transtime = @config.transtime
+      @_rollerTime = @config.rollerTime
+      @config.xAttributeOptions.push
+        name: "position"
+        displaySparkline: false
 
       @addAttribute  'presence',
         description: "online status",
         type: t.boolean
+        hidden: false
+      @addAttribute  'action',
+        description: "cover action (close,stop,open)",
+        type: t.string
+        hidden: true
+      @addAttribute  'lift',
+        description: "close percentage (slider)",
+        type: t.number
+        hidden: true
+      @addAttribute  'position',
+        description: "cover position",
+        type: t.number
+        acronym: "open"
+        unit: "%"
+      @addAttribute  'status',
+        description: "cover status",
+        type: t.string
+        acronym: "status"
 
       super()
       myRaspBeePlugin.on "event", (data) =>
@@ -1697,64 +1731,135 @@ module.exports = (env) ->
           "stop" — Stops the lift action
         ###
         if val is "stop"
-          @_setDimlevel(50)
+          @_setAction('stop')
         else
-          @_setDimlevel(Number val)
+          @_setLift(Number val)
       else if data.state.open?
         if data.state.open
-          @_setDimlevel(0)
+          @_setLift(0)
         else
-          @_setDimlevel(100)
+          @_setLift(100)
       else if data.state.stop?
         if data.state.stop
-          @_setDimlevel(50)
+          @_setAction('stop')
       else if data.state.tilt?
         env.logger.debug "Tilt action not supported"
 
     destroy: ->
       super()
 
-    getTemplateName: -> "raspbee-dimmer"
+    getTemplateName: -> "raspbee-cover"
 
     _setPresence: (value) ->
       if @_presence is value then return
       @_presence = value
       @emit 'presence', value
-
     getPresence: -> Promise.resolve(@_presence)
 
-    turnOn: ->
-      @changeDimlevelTo(100)
-      # @changeDimlevelTo(@_lastdimlevel)
+    _setAction: (value) ->
+      if @_action is value then return
+      @_action = value
+      @emit 'action', value
+    getAction: -> Promise.resolve(@_action)
 
-    turnOff: ->
-      @changeDimlevelTo(0)
+    _setLift: (value) ->
+      if @_lift is value then return
+      @_lift = value
+      @emit 'lift', @_lift
+    getLift: -> Promise.resolve(@_lift)
 
-    stop: ->
-      @changeDimlevelTo(50)
-      ###
+    _setPosition: (value) ->
+      if @_position is value then return
+      @_position = value
+      @emit 'position', value
+    getPosition: -> Promise.resolve(@_position)
+
+    _setStatus: (value) ->
+      if @_status is value then return
+      @_status = value
+      @emit 'status', value
+    getStatus: -> Promise.resolve(@_status)
+
+    moveTo: (position) =>
+
+      clearTimeout(@positionTimer) if @positionTimer?
+
+      if position is @_position then return
+
+      _currentPosition = @_position
+      _targetPosition = position
+      _transitSeconds = Math.abs(position - _currentPosition) * @_rollerTime / 100
+      _positionStep = Math.round((position - _currentPosition) / _transitSeconds)
+
+      if @_position < _targetPosition
+        @_setStatus "opening"
+        @_setAction('open')
+      if @_position > _targetPosition
+        @_setStatus "closing"
+        @_setAction('close')
+
+      env.logger.debug "moveTo: " + _currentPosition + ", target: " + _targetPosition + ", _transitSeconds: " + _transitSeconds + ", _positionStep: " + _positionStep
+
+      updatePosition = () =>
+        if ((@_position < _targetPosition) and (@_position + _positionStep <= _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep >= _targetPosition))
+          @_setPosition(@_position + _positionStep)
+          env.logger.debug "updatePosition: " + (@_lift + _positionStep)
+          @getPosition()
+          .then (position)=>
+            env.logger.debug "Position: " + position 
+            @positionTimer = setTimeout(updatePosition,1000)
+        else
+          @stopCover()
+      updatePosition()
+
+    stopCover:() =>
+      clearTimeout(@positionTimer)
+      @getPosition()
+      .then (position)=>
+        @_setLift(position) # update target position
+        @_setAction('stop')
+        if position is 0
+          @_setStatus('closed')
+        else
+          @_setStatus('open')
+
+    changeLiftTo: (lift, time) ->
+      # lift 100 is fully open, 0 is closed (dimmer slider)
+      @moveTo(lift) #lift is percentage closed
       param = {
-        bri_inc: 0
+        open: !(lift == 0) # slider 0 means cover fully closed and open=>false
+        lift: 100-lift # inverse value of slider
       }
       @_sendState(param).then( () =>
+        @_setLift(lift) # set gui (slider) to target position
+        #@moveTo(lift) # start position change to target position
         return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)
       )
-      ###
 
-    changeDimlevelTo: (level, time) ->
-      param = {
-        open: !(level == 100)
-        lift: level
-      }
-      #if (level > 0)
-      #param["lift"] = Number level # Math.round(level * (2.54)) # Math.round(level*(2.54))
-        # param["bri"] = 254 - Math.round(level * (2.54)) # Math.round(level*(2.54))
+    changeActionTo: (action, time) ->
+      env.logger.debug "ChangeStateTo " + action
+      switch action
+        when 'close'
+          @_setLift(0)
+          @moveTo(0) # is 100% closed
+          param = {
+            lift: 100
+          }
+        when 'stop'
+          @stopCover()
+          param = {
+            stop: true
+          }
+        when 'open'
+          @_setLift(100)
+          @moveTo(100) # is 0% closed
+          param = {
+            lift: 0
+          }
       @_sendState(param).then( () =>
-        #unless @_dimlevel is 0
-        #  @_lastdimlevel = @_dimlevel
-        @_setDimlevel(level)
+        @_setAction(action)
         return Promise.resolve()
       ).catch( (error) =>
         return Promise.reject(error)
@@ -1762,12 +1867,14 @@ module.exports = (env) ->
 
     _sendState: (param) ->
       if (myRaspBeePlugin.ready)
+        #return Promise.resolve()
         myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to device #{@name}")
           env.logger.debug (param)
           if res[0].success?
             return Promise.resolve()
           else
+            @stopCover()
             if (res[0].error.type is 3 )
               @_setPresence(false)
               return Promise.reject(Error("device #{@name} not reachable"))
@@ -1775,6 +1882,7 @@ module.exports = (env) ->
               return Promise.reject(Error("device #{@name} is not modifiable. Device is set to off"))
             else Promise.reject(Error("general error"))
         ).catch( (error) =>
+          @stopCover()
           return Promise.reject(error)
         )
       else

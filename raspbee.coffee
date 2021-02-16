@@ -1740,7 +1740,14 @@ module.exports = (env) ->
         if val is "stop"
           @stopCover()
         else
-          @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
+          if Number val is 50
+            @stopCover()
+          else if Number val is 0
+            @moveTo(0)
+          else if Number val is 100
+            @moveTo(100)
+      ###
+          #@moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
       else if data.state.open?
         if data.state.open
           @moveTo(0)
@@ -1751,6 +1758,7 @@ module.exports = (env) ->
           @stopCover()
       else if data.state.tilt?
         env.logger.debug "Tilt action not supported"
+      ###
 
     destroy: ->
       super()
@@ -1787,10 +1795,8 @@ module.exports = (env) ->
       @emit 'status', value
     getStatus: -> Promise.resolve(@_status)
 
-    moveTo: (position) =>
-
+    moveTo: (position, send=false) =>
       clearTimeout(@positionTimer) if @positionTimer?
-
       if position is @_position then return
 
       _currentPosition = @_position
@@ -1810,13 +1816,16 @@ module.exports = (env) ->
       updatePosition = () =>
         if ((@_position < _targetPosition) and (@_position + _positionStep <= _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep >= _targetPosition))
           @_setPosition(@_position + _positionStep)
-          env.logger.debug "updatePosition: " + (@_lift + _positionStep)
+          env.logger.debug "updatePosition: " + (@_position + _positionStep)
           @getPosition()
           .then (position)=>
             env.logger.debug "Position: " + position 
             @positionTimer = setTimeout(updatePosition,1000)
         else
-          @stopCover()
+          if send
+            @stopCoverSend()
+          else
+            @stopCover()
       updatePosition()
 
     stopCover:() =>
@@ -1830,13 +1839,34 @@ module.exports = (env) ->
         else
           @_setStatus('open')
 
-    changeLiftTo: (lift, time) ->
+    stopCoverSend:() =>
+      @stopCover()
+      param =
+        lift: 50
+      env.logger.debug "stopCover, @_sendState: " + JSON.stringify(param,null,2)
+      #return Promise.resolve()
+      @_sendState(param).then( () =>
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+
+    changeLiftTo: (_lift, time) ->
       # lift 100 is fully open, 0 is closed (dimmer slider)
-      @moveTo(lift) #lift is percentage closed
-      param = {
-        open: !(lift == 0) # slider 0 means cover fully closed and open=>false
-        lift: 100-lift # inverse value of slider
-     }
+      if _lift is @_position then return
+
+      if _lift > @_position # open
+        param = 
+          open: true # slider 0 means cover fully closed and open=>false
+          lift: 0 # inverse value of slider
+      if _lift < @_position # close
+        param =
+          open: false # slider 0 means cover fully closed and open=>false
+          lift: 100 # inverse value of slider
+      @moveTo(_lift, true) # lift is percentage closed
+      env.logger.debug "changeLiftTo, @_sendState: " + JSON.stringify(param,null,2)
+      #return Promise.resolve()
       @_sendState(param).then( () =>
         @_setLift(lift) # set gui (slider) to target position
         #@moveTo(lift) # start position change to target position
@@ -1850,21 +1880,23 @@ module.exports = (env) ->
       switch action
         when 'close'
           @_setLift(0)
-          @moveTo(0) # is 100% closed
+          @moveTo(0, true) # is 100% closed
           param = {
             lift: 100
           }
         when 'stop'
-          @stopCover()
+          @stopCoverSend()
           param = {
-            stop: true
+            lift: 50
           }
         when 'open'
           @_setLift(100)
-          @moveTo(100) # is 0% closed
+          @moveTo(100, true) # is 0% closed
           param = {
             lift: 0
           }
+      env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
+      #return Promise.resolve()
       @_sendState(param).then( () =>
         @_setAction(action)
         return Promise.resolve()

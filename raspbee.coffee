@@ -1674,9 +1674,16 @@ module.exports = (env) ->
       @_position = lastState?.position?.value ? 0 # is closed
       @_transtime = @config.transtime
       @_rollerTime = @config.rollerTime ? 20
-      @config.xAttributeOptions.push
+
+      _sparklineDisablePosition = 
         name: "position"
         displaySparkline: false
+      @positionSet = false
+      for xAttr in @config.xAttributeOptions
+        if xAttr.name is "position"
+          @positionSet = true      
+      unless @positionSet 
+        @config.xAttributeOptions.push _sparklineDisablePosition
 
       @addAttribute  'presence',
         description: "online status",
@@ -1829,7 +1836,7 @@ module.exports = (env) ->
       param = {
         open: !(lift == 0) # slider 0 means cover fully closed and open=>false
         lift: 100-lift # inverse value of slider
-      }
+     }
       @_sendState(param).then( () =>
         @_setLift(lift) # set gui (slider) to target position
         #@moveTo(lift) # start position change to target position

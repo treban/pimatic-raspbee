@@ -1725,7 +1725,6 @@ module.exports = (env) ->
         )
 
     parseEvent: (data) ->
-      return
       @_setPresence(data.state.reachable) if data.state?.reachable?
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.lift?
@@ -1880,18 +1879,18 @@ module.exports = (env) ->
       switch action
         when 'close'
           @_setLift(0)
-          @moveTo(0, true) # is 100% closed
+          #@moveTo(0, true) # is 100% closed
           param = {
             lift: 100
           }
         when 'stop'
-          @stopCoverSend()
+          #@stopCover()
           param = {
             lift: 50
           }
         when 'open'
           @_setLift(100)
-          @moveTo(100, true) # is 0% closed
+          #@moveTo(100, true) # is 0% closed
           param = {
             lift: 0
           }

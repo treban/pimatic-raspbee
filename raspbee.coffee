@@ -1725,6 +1725,7 @@ module.exports = (env) ->
         )
 
     parseEvent: (data) ->
+      return
       @_setPresence(data.state.reachable) if data.state?.reachable?
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.lift?

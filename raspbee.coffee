@@ -1882,17 +1882,26 @@ module.exports = (env) ->
           #@moveTo(0, true) # is 100% closed
           param = {
             lift: 100
+            bri: 254
+            on: true
+            open: false
           }
         when 'stop'
           #@stopCover()
           param = {
             lift: 50
+            bri: 127
+            on: true
+            open: true
           }
         when 'open'
           @_setLift(100)
           #@moveTo(100, true) # is 0% closed
           param = {
             lift: 0
+            bri: 0
+            on: false
+            open: true
           }
       env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
       #return Promise.resolve()

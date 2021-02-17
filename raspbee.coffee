@@ -1739,13 +1739,12 @@ module.exports = (env) ->
         ###
         if val is "stop"
           @stopCover()
-        else
-          if Number val is 50
-            @stopCover()
-          else if Number val is 0
-            @moveTo(0)
-          else if Number val is 100
-            @moveTo(100)
+        else if (Number val) is 50
+          @stopCover()
+        else if (Number val) is 0 # is fully open
+          @moveTo(100)
+        else if (Number val) is 100 # is fully closed
+          @moveTo(0)
       ###
           #@moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
       else if data.state.open?
@@ -1814,7 +1813,7 @@ module.exports = (env) ->
       env.logger.debug "moveTo: " + _currentPosition + ", target: " + _targetPosition + ", _transitSeconds: " + _transitSeconds + ", _positionStep: " + _positionStep
 
       updatePosition = () =>
-        if ((@_position < _targetPosition) and (@_position + _positionStep <= _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep >= _targetPosition))
+        if ((@_position < _targetPosition) and (@_position + _positionStep < _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep > _targetPosition))
           @_setPosition(@_position + _positionStep)
           env.logger.debug "updatePosition: " + (@_position + _positionStep)
           @getPosition()
@@ -1853,16 +1852,16 @@ module.exports = (env) ->
 
 
     changeLiftTo: (_lift, time) ->
-      # lift 100 is fully open, 0 is closed (dimmer slider)
+      # slider 100 is fully opened, 0 is closed (dimmer slider)
       if _lift is @_position then return
 
       if _lift > @_position # open
         param = 
-          open: true # slider 0 means cover fully closed and open=>false
+          #open: false # slider 0 means cover fully closed and open=>false
           lift: 0 # inverse value of slider
       if _lift < @_position # close
         param =
-          open: false # slider 0 means cover fully closed and open=>false
+          #open: false # slider 0 means cover fully closed and open=>false
           lift: 100 # inverse value of slider
       @moveTo(_lift, true) # lift is percentage closed
       env.logger.debug "changeLiftTo, @_sendState: " + JSON.stringify(param,null,2)

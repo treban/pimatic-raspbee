@@ -1729,35 +1729,20 @@ module.exports = (env) ->
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.lift?
         val = String data.state.lift
-        ###
-          Supported range is 0–100 or special value "stop"
-          lift is best understood as “percentage closed”. 
-          So for any lift value below 100 %, open is true.
-          0–99 — open is true
-          100 — open is false
-          "stop" — Stops the lift action
-        ###
         if val is "stop"
           @stopCover()
-        else if (Number val) is 50
-          @stopCover()
-        else if (Number val) is 0 # is fully open
-          @moveTo(100)
-        else if (Number val) is 100 # is fully closed
-          @moveTo(0)
-      ###
-          #@moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
+        else
+          @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
       else if data.state.open?
         if data.state.open
-          @moveTo(0)
-        else
           @moveTo(100)
+        else
+          @moveTo(0)
       else if data.state.stop?
         if data.state.stop
           @stopCover()
       else if data.state.tilt?
         env.logger.debug "Tilt action not supported"
-      ###
 
     destroy: ->
       super()
@@ -1813,7 +1798,7 @@ module.exports = (env) ->
       env.logger.debug "moveTo: " + _currentPosition + ", target: " + _targetPosition + ", _transitSeconds: " + _transitSeconds + ", _positionStep: " + _positionStep
 
       updatePosition = () =>
-        if ((@_position < _targetPosition) and (@_position + _positionStep < _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep > _targetPosition))
+        if ((@_position < _targetPosition) and (@_position + _positionStep <= _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep >= _targetPosition))
           @_setPosition(@_position + _positionStep)
           env.logger.debug "updatePosition: " + (@_position + _positionStep)
           @getPosition()
@@ -1841,7 +1826,7 @@ module.exports = (env) ->
     stopCoverSend:() =>
       @stopCover()
       param =
-        lift: 50
+        stop: true
       env.logger.debug "stopCover, @_sendState: " + JSON.stringify(param,null,2)
       #return Promise.resolve()
       @_sendState(param).then( () =>
@@ -1879,32 +1864,23 @@ module.exports = (env) ->
       switch action
         when 'close'
           @_setLift(0)
-          #@moveTo(0, true) # is 100% closed
+          @moveTo(0, false) # is 100% closed
           param = {
-            lift: 100
-            bri: 254
-            on: true
             open: false
           }
         when 'stop'
-          #@stopCover()
+          @stopCover()
           param = {
-            lift: 50
-            bri: 127
-            on: true
-            open: true
+            stop: true
           }
         when 'open'
           @_setLift(100)
-          #@moveTo(100, true) # is 0% closed
+          @moveTo(100, false) # is 100% opened
           param = {
-            lift: 0
-            bri: 0
-            on: false
             open: true
           }
       env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
-      #return Promise.resolve()
+      return Promise.resolve()
       @_sendState(param).then( () =>
         @_setAction(action)
         return Promise.resolve()
@@ -1913,8 +1889,8 @@ module.exports = (env) ->
       )
 
     _sendState: (param) ->
+      #return Promise.resolve()
       if (myRaspBeePlugin.ready)
-        #return Promise.resolve()
         myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to device #{@name}")
           env.logger.debug (param)

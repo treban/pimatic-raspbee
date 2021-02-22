@@ -1880,7 +1880,6 @@ module.exports = (env) ->
             open: true
           }
       env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
-      return Promise.resolve()
       @_sendState(param).then( () =>
         @_setAction(action)
         return Promise.resolve()

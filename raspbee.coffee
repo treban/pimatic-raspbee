@@ -1729,8 +1729,10 @@ module.exports = (env) ->
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.lift?
         val = String data.state.lift
-        if val is "stop"
+        if val is "stop" or (Number val) is 50
           @stopCover()
+
+      ###
         #else
         #  @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
       else if data.state.open?
@@ -1743,6 +1745,7 @@ module.exports = (env) ->
           @stopCover()
       else if data.state.tilt?
         env.logger.debug "Tilt action not supported"
+      ###
 
     destroy: ->
       super()

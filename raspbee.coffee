@@ -1731,8 +1731,8 @@ module.exports = (env) ->
         val = String data.state.lift
         if val is "stop"
           @stopCover()
-        else
-          @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
+        #else
+        #  @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
       else if data.state.open?
         if data.state.open
           @moveTo(100)
@@ -1844,10 +1844,12 @@ module.exports = (env) ->
         param = 
           #open: false # slider 0 means cover fully closed and open=>false
           lift: 0 # inverse value of slider
+          open: true
       if _lift < @_position # close
         param =
           #open: false # slider 0 means cover fully closed and open=>false
           lift: 100 # inverse value of slider
+          open: false
       @moveTo(_lift, true) # lift is percentage closed
       env.logger.debug "changeLiftTo, @_sendState: " + JSON.stringify(param,null,2)
       #return Promise.resolve()
@@ -1867,6 +1869,7 @@ module.exports = (env) ->
           @moveTo(0, false) # is 100% closed
           param = {
             open: false
+            tilt: 100
           }
         when 'stop'
           @stopCover()
@@ -1878,6 +1881,7 @@ module.exports = (env) ->
           @moveTo(100, false) # is 100% opened
           param = {
             open: true
+            tilt: 0
           }
       env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
       @_sendState(param).then( () =>

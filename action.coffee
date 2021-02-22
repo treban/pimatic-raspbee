@@ -497,7 +497,8 @@ module.exports = (env) ->
 
       device = null
       valueTokens = null
-      stop = null
+      action = 
+        action: "stop"
 
       match = M(input, context)
         .match("set raspbee ")
@@ -516,8 +517,18 @@ module.exports = (env) ->
               .match('%', optional: yes)          
           ),
           ((m) =>
+            m.match(" open", (m)=>
+              action.action = "open"
+            )
+          )
+          ((m) =>
+            m.match(" close", (m)=>
+              action.action = "close"
+            )
+          )
+          ((m) =>
             m.match(" stop", (m)=>
-              stop = true
+              action.action = "stop"
             )
           )
         ])
@@ -537,12 +548,12 @@ module.exports = (env) ->
       return {
         token: match.getFullMatch()
         nextInput: input.substring((match.getFullMatch()).length)
-        actionHandler: new RaspbeeCoverActionHandler(@framework, device, stop, valueTokens, null) #transitionMs)
+        actionHandler: new RaspbeeCoverActionHandler(@framework, device, action, valueTokens, null) #transitionMs)
       }
 
   class RaspbeeCoverActionHandler extends env.actions.ActionHandler
 
-    constructor: (framework, device, stop, valueTokens, @transitionTime=null) ->
+    constructor: (framework, device, action, valueTokens, @transitionTime=null) ->
       super()
       @framework=framework
       @device=device
@@ -560,19 +571,13 @@ module.exports = (env) ->
         if simulate
           __("would set cover %s to %s%%", @device.name, value)
         else
-          if @stop
-            @device.stop().then( => __("stop cover %s", @device.name) )
-          else
-            @device.changeDimlevelTo(value, @transitionTime).then( => __("set cover %s to %s%%", @device.name, value) )
+          @device.changeActionTo(action.action).then( => __("set cover %s to %s%%", @device.name, value) )
       )
 
     executeAction: (simulate) =>
-      if @valueTokens?
-        return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
-          return @_doExecuteAction(simulate, value )
-        )
-      else
-        return @_doExecuteAction(simulate)
+      return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
+        return @_doExecuteAction(simulate, value )
+      )
 
     hasRestoreAction: -> yes
     executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))

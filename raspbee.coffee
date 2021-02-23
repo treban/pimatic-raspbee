@@ -1674,6 +1674,7 @@ module.exports = (env) ->
       @_position = lastState?.position?.value ? 0 # is closed
       @_transtime = @config.transtime
       @_rollerTime = @config.rollerTime ? 20
+      @_runningAction = false
 
       _sparklineDisablePosition = 
         name: "position"
@@ -1728,24 +1729,24 @@ module.exports = (env) ->
       @_setPresence(data.state.reachable) if data.state?.reachable?
       env.logger.debug "Received values: " + JSON.stringify(data,null,2)
       if data.state.lift?
-        val = String data.state.lift
-        if val is "stop" or (Number val) is 50
+        lift = String data.state.lift
+        if lift is "stop" or (Number lift) is 50
           @stopCover()
+        else 
+          if not @_runningAction # action triggered on shutter control
+            if (Number lift) is 0
+              @_setLift(100)
+              @moveTo(100, false)
+            else if (Number lift) is 100
+              @_setLift(0)
+              @moveTo(0, false)
+            else
+              env.logger.debug "Lift action '#{data.state.lift}' not supported"
+          else
+            env.logger.debug "Action already running"
+      else
+        env.logger.debug "No lift value!"
 
-      ###
-        #else
-        #  @moveTo(100 - Number val) # val reversed -> 0 is closed and 100 if opened
-      else if data.state.open?
-        if data.state.open
-          @moveTo(100)
-        else
-          @moveTo(0)
-      else if data.state.stop?
-        if data.state.stop
-          @stopCover()
-      else if data.state.tilt?
-        env.logger.debug "Tilt action not supported"
-      ###
 
     destroy: ->
       super()
@@ -1825,6 +1826,7 @@ module.exports = (env) ->
           @_setStatus('closed')
         else
           @_setStatus('open')
+        @_runningAction = false
 
     stopCoverSend:() =>
       @stopCover()
@@ -1843,6 +1845,7 @@ module.exports = (env) ->
       # slider 100 is fully opened, 0 is closed (dimmer slider)
       if _lift is @_position then return
 
+      @_runningAction = true
       if _lift > @_position # open
         param = 
           open: true # slider 0 means cover fully closed and open=>false
@@ -1864,26 +1867,24 @@ module.exports = (env) ->
 
     changeActionTo: (action, time) ->
       env.logger.debug "ChangeStateTo " + action
+      @_runningAction = true
       switch action
         when 'close'
           @_setLift(0)
           @moveTo(0, false) # is 100% closed
-          param = {
+          param =
             open: false
             lift: 100
-          }
         when 'stop'
           @stopCover()
-          param = {
+          param =
             stop: true
-          }
         when 'open'
           @_setLift(100)
           @moveTo(100, false) # is 100% opened
-          param = {
+          param =
             open: true
             lift: 0
-          }
       env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
       @_sendState(param).then( () =>
         @_setAction(action)
@@ -1894,6 +1895,7 @@ module.exports = (env) ->
 
     _sendState: (param) ->
       #return Promise.resolve()
+      #env.logger.debug "_sendState: " + JSON.stringify(param,null,2) + ", myRaspBeePlugin.ready: " + myRaspBeePlugin.ready
       if (myRaspBeePlugin.ready)
         myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
           env.logger.debug ("New value send to device #{@name}")

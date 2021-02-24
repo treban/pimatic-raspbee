@@ -1734,10 +1734,10 @@ module.exports = (env) ->
           @stopCover()
         else 
           if not @_runningAction # action triggered on shutter control
-            if (Number lift) is 0
+            if (Number lift) is 100
               @_setLift(100)
               @moveTo(100, false)
-            else if (Number lift) is 100
+            else if (Number lift) is 0
               @_setLift(0)
               @moveTo(0, false)
             else

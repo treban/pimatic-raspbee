@@ -117,7 +117,7 @@ module.exports = (env) ->
             when dev.type == "Extended color light" then "RaspBeeRGBCT"
             when dev.type == "Window covering device" then "RaspBeeCover"
             when dev.type == "Window covering controller" then "RaspBeeCover"
-            when dev.type == "ZHAAlarm" then "RaspBeeWarning"
+            when dev.type == "Warning device" then "RaspBeeWarning"
           if @lclass == "RaspbeeCover"
             config = {
               class: @lclass,

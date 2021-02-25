@@ -582,6 +582,111 @@ module.exports = (env) ->
     hasRestoreAction: -> yes
     executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))
 
+  class RaspbeeWarningActionProvider extends env.actions.ActionProvider
+
+    constructor: (framework) ->
+      super()
+      @framework=framework
+
+    parseAction: (input, context) =>
+      retVar = null
+
+      RaspBeeDevices = _(@framework.deviceManager.devices).values().filter(
+        (device) => _.includes [
+          'RaspBeeWarning'
+        ], device.config.class
+      ).value()
+
+      if RaspBeeDevices.length is 0 then return
+
+      device = null
+      valueTokens = null
+      action = 
+        action: "off"
+
+      match = M(input, context)
+        .match("set raspbee ")
+        .matchDevice(RaspBeeDevices, (next, d) =>
+          if device? and device.id isnt d.id
+            context?.addError(""""#{input.trim()}" is ambiguous (device).""")
+            return
+          device = d
+        )
+        .or([
+          ((m) =>
+            m.match(" off", (m)=>
+              action.action = "off"
+            )
+          )
+          ((m) =>
+            m.match(" silent", (m)=>
+              action.action = "silent"
+            )
+          )
+          ((m) =>
+            m.match(" sound", (m)=>
+              action.action = "sound"
+            )
+          )
+          ((m) =>
+            m.match(" long", (m)=>
+              action.action = "long"
+            )
+          )
+        ])
+
+      #transitionMs = null
+      #match = matchTransitionExpression(match, ( (m, {time, unit, timeMs}) =>
+      #  transitionMs = timeMs/100
+      #), yes)
+
+      if not match.getFullMatch()? then return null
+
+      ###
+      if valueTokens.length is 1 and not isNaN(valueTokens[0])
+        unless 0.0 <= parseFloat(valueTokens[0]) <= 100.0
+          context?.addError("Set must be between 0% and 100%")
+          return null
+      ###
+
+      return {
+        token: match.getFullMatch()
+        nextInput: input.substring((match.getFullMatch()).length)
+        actionHandler: new RaspbeeWarningActionHandler(@framework, device, action, null) #transitionMs)
+      }
+
+  class RaspbeeWarningActionHandler extends env.actions.ActionHandler
+
+    constructor: (framework, device, action, @transitionTime=null) ->
+      super()
+      @framework=framework
+      @device=device
+      assert @device?
+      @valueTokens = null
+      @action = action
+      #assert @valueTokens? if valueTokens?
+
+    setup: ->
+      @dependOnDevice(@device)
+      super()
+
+    _doExecuteAction: (simulate, value, transtime) =>
+      return (
+        if simulate
+          __("would set cover %s to %s", @device.name, value)
+        else
+          @device.changeWarningTo(value).then( => __("set warning %s to %s", @device.name, value) )
+      )
+
+    executeAction: (simulate) =>
+      #return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
+      return @_doExecuteAction(simulate, @action.action )
+      #)
+
+    hasRestoreAction: -> yes
+    executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))
+
+
   return exports = {
     RaspBeeSceneActionProvider
     RaspBeeRGBActionProvider
@@ -589,4 +694,5 @@ module.exports = (env) ->
     RaspbeeDimmerActionProvider
     RaspBeeHueSatActionProvider
     RaspbeeCoverActionProvider
+    RaspbeeWarningActionProvider
   }

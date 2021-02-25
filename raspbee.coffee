@@ -61,6 +61,7 @@ module.exports = (env) ->
       @framework.ruleManager.addPredicateProvider(new RaspBeePredicate.RaspBeePredicateProvider(@framework, @config))
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeHueSatActionProvider(@framework))
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeCoverActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeWarningActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'

@@ -510,13 +510,6 @@ module.exports = (env) ->
         )
         .or([
           ((m) =>
-            m.match(" to ")
-              .matchNumericExpression( (next, ts) =>
-                valueTokens = ts
-              )
-              .match('%', optional: yes)          
-          ),
-          ((m) =>
             m.match(" open", (m)=>
               action.action = "open"
             )
@@ -538,29 +531,31 @@ module.exports = (env) ->
       #  transitionMs = timeMs/100
       #), yes)
 
-      if not match.getFullMatch()? and not valueTokens? and not stop? then return null
+      if not match.getFullMatch()? then return null
 
+      
+      ###
       if valueTokens.length is 1 and not isNaN(valueTokens[0])
         unless 0.0 <= parseFloat(valueTokens[0]) <= 100.0
           context?.addError("Set must be between 0% and 100%")
           return null
+      ###
 
       return {
         token: match.getFullMatch()
         nextInput: input.substring((match.getFullMatch()).length)
-        actionHandler: new RaspbeeCoverActionHandler(@framework, device, action, valueTokens, null) #transitionMs)
+        actionHandler: new RaspbeeCoverActionHandler(@framework, device, action, null) #transitionMs)
       }
 
   class RaspbeeCoverActionHandler extends env.actions.ActionHandler
 
-    constructor: (framework, device, action, valueTokens, @transitionTime=null) ->
+    constructor: (framework, device, action, @transitionTime=null) ->
       super()
       @framework=framework
       @device=device
-      @stop=stop
-      @valueTokens=valueTokens
       assert @device?
-      assert @valueTokens? if valueTokens?
+      @valueTokens = null
+      @action = action
 
     setup: ->
       @dependOnDevice(@device)
@@ -569,15 +564,15 @@ module.exports = (env) ->
     _doExecuteAction: (simulate, value, transtime) =>
       return (
         if simulate
-          __("would set cover %s to %s%%", @device.name, value)
+          __("would set cover %s to %s", @device.name, value)
         else
-          @device.changeActionTo(action.action).then( => __("set cover %s to %s%%", @device.name, value) )
+          @device.changeActionTo(value).then( => __("set cover %s to %s", @device.name, value) )
       )
 
     executeAction: (simulate) =>
-      return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
-        return @_doExecuteAction(simulate, value )
-      )
+      #return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
+      return @_doExecuteAction(simulate, @action.action )
+      #)
 
     hasRestoreAction: -> yes
     executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))

@@ -405,6 +405,84 @@ $(document).on 'templateinit', (event) ->
         .done(ajaxShowToast)
         .fail(ajaxAlertFail)
 
+  class RaspBeeWarningItem extends pimatic.DeviceItem # extends pimatic.SwitchItem
+
+    constructor: (templData, @device) ->
+      super(templData, @device)
+      warningAttribute = @getAttribute('warning')
+      warning = warningAttribute.value
+
+
+    getItemTemplate: => 'raspbee-warning'
+
+    afterRender: (elements) ->
+      super(elements)
+
+      @offButton = $(elements).find('[name=offButton]')
+      @silentButton = $(elements).find('[name=silentButton]')
+      @soundButton = $(elements).find('[name=soundButton]')
+      @longButton = $(elements).find('[name=longButton]')
+      @updateWarningButtons()
+
+      @getAttribute('warning')?.value.subscribe( => @updateWarningButtons() )
+
+      @getAttribute('presence').value.subscribe( =>
+        @updateClass()
+      )
+
+      @presenceEle = $(elements).find('.attr-presence')
+      @updateClass()
+
+    modeOff: -> @changeWarningTo "off"
+    modeSilent: -> @changeWarningTo "silent"
+    modeSound: -> @changeWarningTo "sound"
+    modeLong: -> @changeWarningTo "long"
+
+    updateWarningButtons: =>
+      warningAttr = @getAttribute('warning')?.value()
+      switch warningAttr
+        when 'off'
+          @offButton.addClass('ui-btn-active')
+          @silentButton.removeClass('ui-btn-active')
+          @soundButton.removeClass('ui-btn-active')
+          @longButton.removeClass('ui-btn-active')
+        when 'silent'
+          @offButton.removeClass('ui-btn-active')
+          @silentButton.addClass('ui-btn-active')
+          @soundButton.removeClass('ui-btn-active')
+          @longButton.removeClass('ui-btn-active')
+        when 'sound'
+          @offButton.removeClass('ui-btn-active')
+          @silentButton.removeClass('ui-btn-active')
+          @soundButton.addClass('ui-btn-active')
+          @longButton.removeClass('ui-btn-active')
+        when 'long'
+          @offButton.removeClass('ui-btn-active')
+          @silentButton.removeClass('ui-btn-active')
+          @soundButton.removeClass('ui-btn-active')
+          @longButton.addClass('ui-btn-active')
+      return
+
+    updateClass: ->
+      value = @getAttribute('presence').value()
+      if @presenceEle?
+        switch value
+          when true
+            @presenceEle.addClass('value-present')
+            @presenceEle.removeClass('value-absent')
+          when false
+            @presenceEle.removeClass('value-present')
+            @presenceEle.addClass('value-absent')
+          else
+            @presenceEle.removeClass('value-absent')
+            @presenceEle.removeClass('value-present')
+        return
+
+    changeWarningTo: (_warning) ->
+      @device.rest.changeWarningTo({warning: _warning}, global: no)
+        .done(ajaxShowToast)
+        .fail(ajaxAlertFail)
+
 
   pimatic.templateClasses['raspbee-switch'] = RaspBeeSwitchItem
   pimatic.templateClasses['raspbee-dimmer'] = RaspBeeDimmerItem
@@ -416,3 +494,4 @@ $(document).on 'templateinit', (event) ->
   pimatic.templateClasses['raspbee-group-rgbct'] = RaspBeeGroupRGBCTItem
   pimatic.templateClasses['raspbee-multi'] = RaspBeeMultiItem
   pimatic.templateClasses['raspbee-cover'] = RaspBeeCoverItem
+  pimatic.templateClasses['raspbee-warning'] = RaspBeeWarningItem

@@ -352,9 +352,22 @@ module.exports = {
         description: "time in seconds for cover to move from closed to open"
         type: "number"
         default: 20
-      transtime:
-        description: "Raspbee transtime"
+      invertedOut:
+        description: "If lift / open states are send inverted to the shutter"
+        type: "boolean"
+        default: false
+      invertedIn:
+        description: "If lift / open states are received inverted from the shutter"
+        type: "boolean"
+        default: false
+  },
+  RaspBeeWarning: {
+    title: "Raspbee warning Device"
+    type: "object"
+    extensions: ["xAttributeOptions"]
+    properties:
+      deviceID:
+        description: "Raspbee address"
         type: "integer"
-        default: 5
   }
 }

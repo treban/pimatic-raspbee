@@ -510,6 +510,13 @@ module.exports = (env) ->
         )
         .or([
           ((m) =>
+            m.match(" to ")
+              .matchNumericExpression( (next, ts) =>
+                valueTokens = ts
+              )
+              .match('%', optional: yes)          
+          ),
+          ((m) =>
             m.match(" open", (m)=>
               action.action = "open"
             )
@@ -534,27 +541,25 @@ module.exports = (env) ->
       if not match.getFullMatch()? then return null
 
       
-      ###
-      if valueTokens.length is 1 and not isNaN(valueTokens[0])
+      if valueTokens? and valueTokens.length is 1 and not isNaN(valueTokens[0])
         unless 0.0 <= parseFloat(valueTokens[0]) <= 100.0
           context?.addError("Set must be between 0% and 100%")
           return null
-      ###
 
       return {
         token: match.getFullMatch()
         nextInput: input.substring((match.getFullMatch()).length)
-        actionHandler: new RaspbeeCoverActionHandler(@framework, device, action, null) #transitionMs)
+        actionHandler: new RaspbeeCoverActionHandler(@framework, device, action, valueTokens, null) #transitionMs)
       }
 
   class RaspbeeCoverActionHandler extends env.actions.ActionHandler
 
-    constructor: (framework, device, action, @transitionTime=null) ->
+    constructor: (framework, device, action, valueTokens, @transitionTime=null) ->
       super()
       @framework=framework
       @device=device
       assert @device?
-      @valueTokens = null
+      @valueTokens = valueTokens
       @action = action
 
     setup: ->
@@ -566,13 +571,19 @@ module.exports = (env) ->
         if simulate
           __("would set cover %s to %s", @device.name, value)
         else
-          @device.changeActionTo(value).then( => __("set cover %s to %s", @device.name, value) )
+          if @valueTokens?
+            @device.changeLiftTo(value).then( => __("set cover %s to %s", @device.name, value) )  
+          else
+            @device.changeActionTo(value).then( => __("set cover %s to %s", @device.name, value) )
       )
 
     executeAction: (simulate) =>
-      #return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
-      return @_doExecuteAction(simulate, @action.action )
-      #)
+      if @valueTokens?
+        return @framework.variableManager.evaluateNumericExpression(@valueTokens).then( (value) =>
+          return @_doExecuteAction(simulate, value )
+        )
+      else
+        return @_doExecuteAction(simulate, @action.action )
 
     hasRestoreAction: -> yes
     executeRestoreAction: (simulate) => Promise.resolve(@_doExecuteAction(simulate, @lastValue))
@@ -657,9 +668,7 @@ module.exports = (env) ->
       @framework=framework
       @device=device
       assert @device?
-      @valueTokens = null
       @action = action
-      #assert @valueTokens? if valueTokens?
 
     setup: ->
       @dependOnDevice(@device)

@@ -42,7 +42,9 @@ module.exports = (env) ->
         RaspBeeDimmerGroup,
         RaspBeeRGBCTGroup,
         RaspBeeGroupScenes,
-        RaspBeeRGBDummy
+        RaspBeeRGBDummy,
+        RaspBeeCover,
+        RaspBeeWarning
       ]
       deviceConfigDef = require("./device-config-schema.coffee")
       for DeviceClass in deviceClasses
@@ -58,6 +60,8 @@ module.exports = (env) ->
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeDimmerActionProvider(@framework))
       @framework.ruleManager.addPredicateProvider(new RaspBeePredicate.RaspBeePredicateProvider(@framework, @config))
       @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspBeeHueSatActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeCoverActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new RaspBeeAction.RaspbeeWarningActionProvider(@framework))
 
       @framework.on "after init", =>
         mobileFrontend = @framework.pluginManager.getPlugin 'mobile-frontend'
@@ -111,14 +115,37 @@ module.exports = (env) ->
             when dev.type == "Color temperature light" then "RaspBeeCT"
             when dev.type == "Color light" then "RaspBeeRGB"
             when dev.type == "Extended color light" then "RaspBeeRGBCT"
-          config = {
-            class: @lclass,
-            name: dev.name,
-            id: "raspbee_l#{dev.etag}#{i}",
-            deviceID: i
-          }
-          if not @inConfig(i, @lclass)
-            @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+            when dev.type == "Window covering device" then "RaspBeeCover"
+            when dev.type == "Window covering controller" then "RaspBeeCover"
+            when dev.type == "Warning device" then "RaspBeeWarning"
+          if @lclass == "RaspbeeCover"
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_c#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Cover: #{config.name} - #{dev.modelid}", config )
+          else if @lclass == "RaspBeeWarning"
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_w#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Warning: #{config.name} - #{dev.modelid}", config )
+          else
+            config = {
+              class: @lclass,
+              name: dev.name,
+              id: "raspbee_l#{dev.etag}#{i}",
+              deviceID: i
+            }
+            if not @inConfig(i, @lclass)
+              @framework.deviceManager.discoveredDevice( 'pimatic-raspbee ', "Light: #{config.name} - #{dev.modelid}", config )
+
       )
       @Connector.getSensor().then((devices)=>
         env.logger.debug("sensor list")
@@ -367,7 +394,7 @@ module.exports = (env) ->
           unit: 'W'
           acronym: @config.powerAcronym
         }
-      if "consumtion" in @config.supports
+      if "consumption" in @config.supports
         @_consumtion = lastState?.consumtion?.value
         @attributes.consumtion = {
           description: "the measured consumtion"
@@ -485,7 +512,7 @@ module.exports = (env) ->
       @_setAlarm(data.state.alarm) if data.state?.alarm?
       @_setBattery(data.config.battery) if data.config?.battery?
       @_setCarbon(data.state.carbonmonoxide) if data.state?.carbonmonoxide?
-      @_setConsumtion(data.state.consumtion) if data.state?.consumtion?
+      @_setConsumtion(data.state.consumption) if data.state?.consumption?
       @_setCurrent(data.state.current) if data.state?.current?
       @_setDark(data.state.dark) if data.state?.dark?
       @_setDaylight(data.state.daylight) if data.state?.daylight?
@@ -902,6 +929,8 @@ module.exports = (env) ->
 
   class RaspBeeSwitch extends env.devices.PowerSwitch
 
+    template: "raspbee-switch"    
+
     constructor: (@config,lastState) ->
       @id = @config.id
       @name = @config.name
@@ -935,6 +964,8 @@ module.exports = (env) ->
 
     destroy: ->
       super()
+
+    getTemplateName: -> "raspbee-switch"
 
     _setPresence: (value) ->
       if @_presence is value then return
@@ -1563,12 +1594,19 @@ module.exports = (env) ->
 
     template: "buttons"
 
+    attributes:
+      button:
+        description: "The last pressed button"
+        type: t.string
+
     actions:
       buttonPressed:
         params:
           buttonId:
             type: t.integer
         description: "Press a button"
+
+    _lastPressedButton: null
 
     constructor: (@config,lastState) ->
       @id = @config.id
@@ -1579,6 +1617,12 @@ module.exports = (env) ->
         @getScenes()
       super(@config,lastState)
 
+      @_lastPressedButton = lastState?.button?.value
+      for button in @config.buttons
+        @_button = button if button.id is @_lastPressedButton
+    
+    getButton: -> Promise.resolve(@_lastPressedButton)
+    
     destroy: () ->
       super()
 
@@ -1613,6 +1657,444 @@ module.exports = (env) ->
             return Promise.resolve()
           return Promise.reject(Error("connector not ready"))
       return Promise.reject(Error("Unknown scene "+scene_name))
+
+  class RaspBeeCover extends env.devices.Device
+
+    actions:
+      changeLiftTo:
+        description: "Sets lift value"
+        params:
+          lift:
+            type: "number"
+      changeActionTo:
+        description: "Sets the action (close,stop,open)"
+        params:
+          action:
+            type: "string"
+
+    template: 'raspbee-cover'
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_presence = lastState?.presence?.value or false
+      @_battery= lastState?.battery?.value or 0
+      @_lift = lastState?.lift?.value ? 0 # is closed
+      @_action = lastState?.action?.value ? "stop"
+      @_status = lastState?.status?.value ? "closed"
+      @_position = lastState?.position?.value ? 0 # is closed
+      @_transtime = @config.transtime
+      @_rollerTime = @config.rollerTime ? 20
+      @_runningAction = false
+      @_invertedIn = @config.invertedIn ? false
+      @_invertedOut = @config.invertedOut ? false
+      @_liftOpenSend = if @_invertedOut then 100 else 0
+      @_liftClosedSend = if @_invertedOut then 0 else 100
+      @_liftOpenReceived = if @_invertedIn then 100 else 0
+      @_liftClosedReceived = if @_invertedIn then 0 else 100
+
+      _sparklineDisablePosition = 
+        name: "position"
+        displaySparkline: false
+      @positionSet = false
+      for xAttr in @config.xAttributeOptions
+        if xAttr.name is "position"
+          @positionSet = true      
+      unless @positionSet 
+        @config.xAttributeOptions.push _sparklineDisablePosition
+
+      @addAttribute  'presence',
+        description: "online status",
+        type: t.boolean
+        hidden: false
+      @addAttribute  'action',
+        description: "cover action (close,stop,open)",
+        type: t.string
+        hidden: true
+      @addAttribute  'lift',
+        description: "close percentage (slider)",
+        type: t.number
+        hidden: true
+      @addAttribute  'position',
+        description: "cover position",
+        type: t.number
+        acronym: "open"
+        unit: "%"
+      @addAttribute  'status',
+        description: "cover status",
+        type: t.string
+        acronym: "status"
+
+      super()
+      myRaspBeePlugin.on "event", (data) =>
+        if data.resource is "lights" and data.id is @deviceID and data.event is "changed"
+          @parseEvent(data)
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
+          @parseEvent(res)
+        ).catch( (error) =>
+          env.logger.error (error)
+        )
+
+    parseEvent: (data) ->
+      @_setPresence(data.state.reachable) if data.state?.reachable?
+      env.logger.debug "Received values: " + JSON.stringify(data,null,2)
+      if data.state.lift?
+        lift = String data.state.lift
+        if lift is "stop" or (Number lift) is 50
+          @stopCover()
+        else 
+          if not @_runningAction # action triggered on shutter control
+            if (Number lift) is @_liftOpenReceived
+              @_setLift(100)
+              @moveTo(100, false)
+            else if (Number lift) is @_liftClosedReceived
+              @_setLift(0)
+              @moveTo(0, false)
+            else
+              env.logger.debug "Lift action '#{data.state.lift}' not supported"
+          else
+            env.logger.debug "Action already running"
+      else
+        env.logger.debug "No lift value!"
+
+
+    destroy: ->
+      super()
+
+    getTemplateName: -> "raspbee-cover"
+
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
+    getPresence: -> Promise.resolve(@_presence)
+
+    _setAction: (value) ->
+      if @_action is value then return
+      @_action = value
+      @emit 'action', value
+    getAction: -> Promise.resolve(@_action)
+
+    _setLift: (value) ->
+      if @_lift is value then return
+      @_lift = value
+      @emit 'lift', @_lift
+    getLift: -> Promise.resolve(@_lift)
+
+    _setPosition: (value) ->
+      if @_position is value then return
+      @_position = value
+      @emit 'position', value
+    getPosition: -> Promise.resolve(@_position)
+
+    _setStatus: (value) ->
+      if @_status is value then return
+      @_status = value
+      @emit 'status', value
+    getStatus: -> Promise.resolve(@_status)
+
+    moveTo: (position, send=false) =>
+      clearTimeout(@positionTimer) if @positionTimer?
+      if position is @_position then return
+
+      _currentPosition = @_position
+      _targetPosition = position
+      _transitSeconds = Math.abs(position - _currentPosition) * @_rollerTime / 100
+      _positionStep = Math.round((position - _currentPosition) / _transitSeconds)
+
+      if @_position < _targetPosition
+        @_setStatus "opening"
+        @_setAction('open')
+      if @_position > _targetPosition
+        @_setStatus "closing"
+        @_setAction('close')
+
+      env.logger.debug "moveTo: " + _currentPosition + ", target: " + _targetPosition + ", _transitSeconds: " + _transitSeconds + ", _positionStep: " + _positionStep
+
+      updatePosition = () =>
+        if ((@_position < _targetPosition) and (@_position + _positionStep <= _targetPosition)) or ((@_position > _targetPosition) and (@_position + _positionStep >= _targetPosition))
+          @_setPosition(@_position + _positionStep)
+          env.logger.debug "updatePosition: " + (@_position + _positionStep)
+          @getPosition()
+          .then (position)=>
+            env.logger.debug "Position: " + position 
+            @positionTimer = setTimeout(updatePosition,1000)
+        else
+          if send
+            @stopCoverSend()
+          else
+            @stopCover()
+      updatePosition()
+
+    stopCover:() =>
+      clearTimeout(@positionTimer)
+      @getPosition()
+      .then (position)=>
+        @_setLift(position) # update target position
+        @_setAction('stop')
+        if position is 0
+          @_setStatus('closed')
+        else
+          @_setStatus('open')
+        @_runningAction = false
+
+    stopCoverSend:() =>
+      @stopCover()
+      param =
+        stop: true
+      env.logger.debug "stopCover, @_sendState: " + JSON.stringify(param,null,2)
+      #return Promise.resolve()
+      @_sendState(param).then( () =>
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+
+    changeLiftTo: (_lift, time) ->
+      # slider 100 is fully opened, 0 is closed (dimmer slider)
+      if _lift is @_position then return
+
+      @_runningAction = true
+      if _lift > @_position # open
+        param = 
+          #open: true # slider 0 means cover fully closed and open=>false
+          lift: @_liftOpenSend # 0 # inverse value of slider
+      if _lift < @_position # close
+        param =
+          #open: false # slider 0 means cover fully closed and open=>false
+          lift: @_liftClosedSend # 100 # inverse value of slider
+      @moveTo(_lift, true) # lift is percentage closed
+      env.logger.debug "changeLiftTo, @_sendState: " + JSON.stringify(param,null,2)
+      #return Promise.resolve()
+      @_sendState(param).then( () =>
+        #@_setLift(lift) # set gui (slider) to target position
+        #@moveTo(lift) # start position change to target position
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    changeActionTo: (action, time) ->
+      env.logger.debug "ChangeStateTo " + action
+      @_runningAction = true
+      switch action
+        when 'close'
+          @_setLift(0)
+          @moveTo(0, false) # is 100% closed
+          param =
+            open: false
+            lift: @_liftClosedSend # 100
+        when 'stop'
+          @stopCover()
+          param =
+            stop: true
+        when 'open'
+          @_setLift(100)
+          @moveTo(100, false) # is 100% opened
+          param =
+            open: true
+            lift: @_liftOpenSend #0
+      env.logger.debug "changeActionTo, @_sendState: " + JSON.stringify(param,null,2)
+      @_sendState(param).then( () =>
+        @_setAction(action)
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    _sendState: (param) ->
+      #return Promise.resolve()
+      #env.logger.debug "_sendState: " + JSON.stringify(param,null,2) + ", myRaspBeePlugin.ready: " + myRaspBeePlugin.ready
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
+          env.logger.debug ("New value send to device #{@name}")
+          env.logger.debug (param)
+          if res[0].success?
+            return Promise.resolve()
+          else
+            @stopCover()
+            if (res[0].error.type is 3 )
+              @_setPresence(false)
+              return Promise.reject(Error("device #{@name} not reachable"))
+            else if (res[0].error.type is 201 )
+              return Promise.reject(Error("device #{@name} is not modifiable. Device is set to off"))
+            else Promise.reject(Error("general error"))
+        ).catch( (error) =>
+          @stopCover()
+          return Promise.reject(error)
+        )
+      else
+        env.logger.error ("gateway not online")
+        return Promise.reject(Error("gateway not online"))
+
+
+  class RaspBeeWarning extends env.devices.Device
+
+    actions:
+      changeWarningTo:
+        description: "Sets warning"
+        params:
+          warning:
+            type: "string"
+
+    template: 'raspbee-warning'
+
+    constructor: (@config,lastState) ->
+      @id = @config.id
+      @name = @config.name
+      @deviceID = @config.deviceID
+      @_presence = lastState?.presence?.value or false
+      @_battery= lastState?.battery?.value or 0
+      @_warning = "off" # lastState?.warning?.value ? "stop" # is warning off
+      @_status = lastState?.status?.value ? ""
+      @_tampered = lastState?.tampered?.value ? false 
+
+      ###
+      _sparklineDisablePosition = 
+        name: "position"
+        displaySparkline: false
+      @positionSet = false
+      for xAttr in @config.xAttributeOptions
+        if xAttr.name is "position"
+          @positionSet = true      
+      unless @positionSet 
+        @config.xAttributeOptions.push _sparklineDisablePosition
+      ###
+
+      @addAttribute  'presence',
+        description: "online status",
+        type: t.boolean
+        labels: ['online', 'offline']
+        hidden: false
+      @addAttribute  'warning',
+        description: "warning action (stop, blink, select)",
+        type: t.string
+        hidden: true
+      ###
+      @addAttribute  'status',
+        description: "warning status",
+        type: t.string
+        acronym: "status"
+      ###
+      @addAttribute  'tampered',
+        description: "tampered",
+        type: t.boolean
+        acronym: "tampered"
+
+      super()
+      myRaspBeePlugin.on "event", (data) =>
+        if data.resource is "lights" and data.id is @deviceID and data.event is "changed"
+          @parseEvent(data)
+
+      @getInfos()
+      myRaspBeePlugin.on "ready", () =>
+        @getInfos()
+
+    getInfos: ->
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.getLight(@deviceID).then( (res) =>
+          @parseEvent(res)
+        ).catch( (error) =>
+          env.logger.error (error)
+        )
+
+    parseEvent: (data) ->
+      @_setPresence(data.state.reachable) if data.state?.reachable?
+      env.logger.debug "Received values: " + JSON.stringify(data,null,2)
+      if data.state?.tampered?
+        @_setTampered = Boolean data.state.tampered
+      else if data.state?.alert?
+        @_setWarning(String data.state.alert)
+      else
+        env.logger.debug "Unknown warning state: " + (JSON.stringify(data.state,null,2) if data.state?)
+
+    destroy: ->
+      super()
+
+    getTemplateName: -> "raspbee-warning"
+
+    _setPresence: (value) ->
+      if @_presence is value then return
+      @_presence = value
+      @emit 'presence', value
+    getPresence: -> Promise.resolve(@_presence)
+
+    _setWarning: (value) ->
+      if @_warning is value then return
+      @_warning = value
+      @emit 'warning', value
+    getWarning: -> Promise.resolve(@_warning)
+
+    _setStatus: (value) ->
+      if @_status is value then return
+      @_status = value
+      @emit 'status', value
+    getStatus: -> Promise.resolve(@_status)
+
+    _setTampered: (value) ->
+      if @_tampered is value then return
+      @_tampered = value
+      @emit 'tampered', value
+    getTampered: -> Promise.resolve(@_tampered)
+
+    changeWarningTo: (warning, time) ->
+      env.logger.debug "ChangeWarningTo " + warning
+      switch warning
+        when 'off'
+          param =
+            alert: 'none'
+        when 'silent'
+          param =
+            alert: 'blink'
+        when 'sound'
+          param =
+            alert: 'select'
+        when 'long'
+          param =
+            alert: 'lselect'
+        else
+          param =
+            alert: 'none'
+      env.logger.debug "changeWarningTo, @_sendState: " + JSON.stringify(param,null,2)
+      @_sendState(param).then( () =>
+        @_setWarning(warning)
+        return Promise.resolve()
+      ).catch( (error) =>
+        return Promise.reject(error)
+      )
+
+    _sendState: (param) ->
+      #return Promise.resolve()
+      #env.logger.debug "_sendState: " + JSON.stringify(param,null,2) + ", myRaspBeePlugin.ready: " + myRaspBeePlugin.ready
+      if (myRaspBeePlugin.ready)
+        myRaspBeePlugin.Connector.setLightState(@deviceID,param).then( (res) =>
+          env.logger.debug ("New value send to device #{@name}")
+          env.logger.debug (param)
+          if res[0].success?
+            return Promise.resolve()
+          else
+            if (res[0].error.type is 3 )
+              @_setPresence(false)
+              return Promise.reject(Error("device #{@name} not reachable"))
+            else if (res[0].error.type is 201 )
+              return Promise.reject(Error("device #{@name} is not modifiable. Device is set to off"))
+            else Promise.reject(Error("general error"))
+        ).catch( (error) =>
+          return Promise.reject(error)
+        )
+      else
+        env.logger.error ("gateway not online")
+        return Promise.reject(Error("gateway not online"))
+
 
 ##############################################################
 # Raspbee system device

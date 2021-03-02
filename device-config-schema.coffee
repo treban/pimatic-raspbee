@@ -319,6 +319,10 @@ module.exports = {
         description: "Auto reset time in milliseconds"
         type: "integer"
         default: 1000
+      rateLimit:
+        description: "Limit data updates to on once every x milliseconds (0 for no limit)"
+        type: "integer"
+        default: 0
   },
   RaspBeeGroupScenes: {
     title: "RaspBeeScenes"

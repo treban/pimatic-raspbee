@@ -29,7 +29,8 @@
     "request-promise": "^4.2.4",
     "ws": "^5.2.2",
     "cassert": "^0.1.2",
-    "decl-api": "0.0.24"
+    "decl-api": "0.0.24",
+    "snyk": "^1.316.1"
   },
   "devDependencies": {
     "blanket": "^1.2.3",
@@ -63,7 +64,9 @@
     "treban <trebankosta@gmail.com>"
   ],
   "scripts": {
-    "test": "grunt test"
+    "test": "grunt test",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "directories": {
     "test": "test"
@@ -71,5 +74,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/treban/pimatic-raspbee.git"
-  }
+  },
+  "snyk": true
 }

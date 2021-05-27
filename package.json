@@ -27,7 +27,7 @@
   "dependencies": {
     "bluebird": "^3.5.5",
     "request-promise": "^4.2.4",
-    "ws": "^5.2.2",
+    "ws": "^7.4.6",
     "cassert": "^0.1.2",
     "decl-api": "0.0.24"
   },
